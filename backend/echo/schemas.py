@@ -236,6 +236,8 @@ class SpatialModel(_Model):
     fixtures: list[Fixture] = Field(default_factory=list)
     reference_points: list[ReferencePoint] = Field(default_factory=list)
     source: Literal["template", "analyzed", "manual", "blank"] = "manual"
+    video_id: str | None = None
+    """File this layout was measured from. Playback of that file uses this model."""
     notes: list[str] = Field(default_factory=list)
     camera_id: str | None = None
     calibration_id: str | None = None

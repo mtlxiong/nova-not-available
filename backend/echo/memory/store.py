@@ -111,6 +111,27 @@ def blank_workspace() -> SpatialModel:
     )
 
 
+def model_for_video(db: Database, video_id: str) -> SpatialModel | None:
+    """Newest analyzed layout measured from this file, preferring one that has stations."""
+    video = get_video(db, video_id)
+    if video is None:
+        return None
+    filename = video.original_name or ""
+    ranked: list[tuple[bool, int, float, SpatialModel]] = []
+    with db.Session() as s:
+        rows = s.scalars(select(SpatialModelRow).order_by(SpatialModelRow.updated_wall_ms.desc())).all()
+        stamped = [(row.updated_wall_ms, SpatialModel.model_validate(row.model)) for row in rows]
+    for updated, model in stamped:
+        if model.source != "analyzed":
+            continue
+        if model.video_id == video_id or (filename and filename in model.name):
+            ranked.append((bool(model.fixtures), len(model.fixtures), updated, model))
+    if not ranked:
+        return None
+    ranked.sort(reverse=True)
+    return ranked[0][3]
+
+
 def get_spatial_model(db: Database, model_id: str | None = None) -> SpatialModel:
     """A specific model, or the active workspace. Seeds the blank workspace + kitchen template."""
     _seed_models(db)

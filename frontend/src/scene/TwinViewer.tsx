@@ -84,12 +84,15 @@ export function TwinViewer() {
   const alignment = useScene((s) => s.alignment)
   const showZones = useScene((s) => s.showZones)
   const showHeatmap = useScene((s) => s.showHeatmap)
+  const mode = useTwin((s) => s.mode)
+  const liveSession = useTwin((s) => s.status.session_id)
+  const replaySession = useReplay((s) => s.data?.session.session_id ?? null)
+  const heatmapSession = mode === 'replay' ? replaySession : liveSession
   const showSplat = useScene((s) => s.showSplat)
   const showCollider = useScene((s) => s.showCollider)
   const showLabels = useScene((s) => s.showLabels)
-  const view = useScene((s) => s.view)
-  const worldBuild = useScene((s) => s.worldBuild)
   const metrics = useReplay((s) => s.metrics)
+  const metricsSessionId = useReplay((s) => s.metricsSessionId)
   const select = useTwin((s) => s.select)
   const [assetError, setAssetError] = useState<string | null>(null)
   const [workspaceCal, setWorkspaceCal] = useState<CalibrationResult | null>(null)
@@ -97,6 +100,23 @@ export function TwinViewer() {
   const blaster = scene?.kind === 'image-blaster' ? scene : null
 
   useEffect(() => setAssetError(null), [sceneId])
+  useEffect(() => {
+    if (!showHeatmap || !heatmapSession) return
+    let stop = false
+    const load = () =>
+      api
+        .metrics(heatmapSession)
+        .then((m) => {
+          if (!stop) useReplay.getState().set({ metrics: m, metricsSessionId: heatmapSession })
+        })
+        .catch(() => undefined)
+    load()
+    const timer = setInterval(load, 4000)
+    return () => {
+      stop = true
+      clearInterval(timer)
+    }
+  }, [showHeatmap, heatmapSession])
   useEffect(() => {
     const id = model?.calibration_id
     if (!id) {
@@ -115,13 +135,16 @@ export function TwinViewer() {
   }, [model?.calibration_id])
 
   const pose = useMemo(() => (workspaceCal && model ? videoCameraPose(workspaceCal, model.notes) : null), [workspaceCal, model])
+  useEffect(() => {
+    useScene.getState().set({ videoReady: !!pose })
+  }, [pose])
 
   if (!model) return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Loading spatial model…</div>
 
   return (
     <div className="relative h-full w-full">
       <Canvas camera={{ fov: 50, near: 0.05, far: 500, position: [-3, 9, 6] }} dpr={[1, 2]} shadows onPointerMissed={() => select(null)}>
-        <color attach="background" args={['#0c0e13']} />
+        <color attach="background" args={['#101210']} />
         <hemisphereLight args={['#e4e4e7', '#18181b', 0.9]} />
         <directionalLight position={[6, 12, 4]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
         {blaster && (
@@ -137,41 +160,13 @@ export function TwinViewer() {
         <group position={alignment.translation} rotation-y={(alignment.yaw_deg * Math.PI) / 180} scale={alignment.scale}>
           {blaster && !assetError ? <FloorOutline model={model} /> : <WorkspaceEnvironment model={model} showLabels={showLabels} />}
           {showZones && <ZonesLayer zones={model.zones} />}
-          {showHeatmap && metrics && <HeatmapLayer heatmap={metrics.heatmap} />}
+          {showHeatmap && metrics && metricsSessionId === heatmapSession && <HeatmapLayer heatmap={metrics.heatmap} />}
           <EntitiesLayer />
           <CalibrationPreview model={model} />
           {zoneDraft && zoneDraft.length > 0 && <ZoneDraftLine points={zoneDraft} />}
         </group>
         <CameraRig model={model} pose={pose} />
       </Canvas>
-      <div className="pointer-events-none absolute left-3 top-3 max-w-xs rounded-md bg-[#1a1c1a] px-3 py-2.5 text-[12px] text-paper ring-1 ring-white/10">
-        {!blaster ? (
-          <div>
-            <div className="truncate font-medium" title={model.name}>{model.name}</div>
-            {model.source === 'template' && <div className="mt-0.5 text-amber-200/90">Template layout, not from this camera</div>}
-            {model.source === 'blank' && <div className="mt-0.5 text-mute">Not mapped yet. Workspace tab, then Analyze.</div>}
-            {model.source === 'analyzed' && <div className="mt-0.5 text-mute">Reconstructed from camera footage</div>}
-          </div>
-        ) : (
-          <div>
-            <div className="font-medium">{blaster.display_name}</div>
-            <div className="mt-0.5 text-mute">{blaster.synthetic ? 'Synthetic test splat' : 'Image-Blaster world'}</div>
-            {assetError && <div className="mt-1 text-rose-300">{assetError} — showing the procedural room</div>}
-          </div>
-        )}
-        <div className="seg pointer-events-auto mt-2">
-          <button className={view === 'iso' ? 'on' : ''} onClick={() => useScene.getState().setView('iso')}>
-            Iso
-          </button>
-          <button className={view === 'top' ? 'on' : ''} onClick={() => useScene.getState().setView('top')}>
-            Top
-          </button>
-          <button className={view === 'video' ? 'on' : ''} disabled={!pose} title={pose ? 'Look through the camera that filmed this workspace' : 'This workspace has no camera pose'} onClick={() => useScene.getState().setView('video')}>
-            Video
-          </button>
-        </div>
-        {worldBuild && <div className="mt-2 text-amber-200">{worldBuild}</div>}
-      </div>
     </div>
   )
 }

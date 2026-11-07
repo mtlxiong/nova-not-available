@@ -300,6 +300,7 @@ class WorkspaceAnalyzer:
             fixtures=fixtures,
             reference_points=[],
             source="analyzed",
+            video_id=req.video_id,
             notes=notes,
             camera_id=obs.camera_id,
             calibration_id=calibration.calibration_id,

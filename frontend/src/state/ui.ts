@@ -26,10 +26,14 @@ interface SceneStore {
   showObjects: boolean
   showTrails: boolean
   showHeatmap: boolean
+  /** True when the workspace has a camera pose the Video view can use. */
+  videoReady: boolean
   showCollider: boolean
   showSplat: boolean
   /** Set while World Labs is still generating the 3D environment for this workspace. */
   worldBuild: string | null
+  /** Opt-in. Stations stay on screen until this is on and a render exists. */
+  worldView: boolean
   view: ViewPreset
   viewNonce: number
   set: (patch: Partial<Omit<SceneStore, 'set' | 'setView'>>) => void
@@ -46,9 +50,11 @@ export const useScene = create<SceneStore>((set) => ({
   showObjects: true,
   showTrails: true,
   showHeatmap: false,
+  videoReady: false,
   showCollider: false,
   showSplat: true,
   worldBuild: null,
+  worldView: false,
   view: 'iso',
   viewNonce: 0,
   set: (patch) => set(patch),

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { withBackend } from '../lib/backend'
-import type { Alignment, ReplayEvent, WorkflowAdvice } from '../lib/types'
+import type { Alignment, AnalysisJob, ReplayEvent, SessionMetrics, WorkflowAdvice } from '../lib/types'
 import { entityColor, visualState } from '../scene/EntitiesLayer'
 import { useTwin } from '../state/twin'
 import { useReplay, useScene } from '../state/ui'
-import { WorkspacePanel } from './WorkspacePanel'
+import { applyWorkspace, WorkspacePanel } from './WorkspacePanel'
 import { useZoneName } from '../lib/workspace'
 
 type Tab = 'workspace' | 'entities' | 'events' | 'metrics' | 'scene'
@@ -387,28 +387,395 @@ function SceneTab() {
   )
 }
 
-export function RightPanel() {
-  const [tab, setTab] = useState<Tab>('workspace')
+function splitAdvice(text: string) {
+  const clean = text.trim()
+  const cut = clean.search(/[.!?]/)
+  if (cut >= 18 && cut <= 96) return { title: clean.slice(0, cut), rest: clean.slice(cut + 1).trim() }
+  const word = clean.lastIndexOf(' ', 68)
+  const at = word > 24 ? word : Math.min(clean.length, 68)
+  return { title: clean.slice(0, at), rest: clean.slice(at).trim() }
+}
+
+function Chevron({ open }: { open: boolean }) {
   return (
-    <div className="flex h-full flex-col text-xs">
-      <div className="flex border-b border-white/10">
-        {(['workspace', 'entities', 'events', 'metrics', 'scene'] as Tab[]).map((t) => (
+    <svg viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 text-mute transition ${open ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
+      <path d="M6 3.5 10.5 8 6 12.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AnalysisCard({
+  text,
+  open,
+  detail,
+  busy,
+  onToggle,
+  onDeeper,
+}: {
+  text: string
+  open: boolean
+  detail: string | null
+  busy: boolean
+  onToggle: () => void
+  onDeeper: () => void
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.04]">
+      <button type="button" className="flex w-full items-start gap-3 px-3 py-3 text-left" aria-expanded={open} onClick={onToggle}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm text-paper">{splitAdvice(text).title}</span>
+          {!open && splitAdvice(text).rest && <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-mute">{splitAdvice(text).rest}</span>}
+        </span>
+        <Chevron open={open} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <p className="text-sm leading-relaxed text-mute">{text}</p>
+          {detail && <p className="mt-3 text-sm leading-relaxed text-paper">{detail}</p>}
+          {!detail && (
+            <button type="button" className="btn mt-3" disabled={busy} onClick={onDeeper}>
+              {busy ? 'Looking' : 'Look further'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdviceAgent({ notice, view }: { notice: string | null; view: 'overview' | 'insights' | 'notes' }) {
+  const mode = useTwin((s) => s.mode)
+  const liveSession = useTwin((s) => s.status.session_id)
+  const replay = useReplay((s) => s.data)
+  const model = useScene((s) => s.model)
+  const sessionId = mode === 'replay' ? replay?.session.session_id ?? null : liveSession
+  const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
+  const [base, setBase] = useState<WorkflowAdvice | null>(null)
+  const [turns, setTurns] = useState<{ question: string; advice: WorkflowAdvice }[]>([])
+  const [question, setQuestion] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [deeper, setDeeper] = useState<Record<string, string>>({})
+  const [digging, setDigging] = useState<string | null>(null)
+  const narrated = useRef<string | null>(null)
+  const threadRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMetrics(null)
+    setBase(null)
+    setTurns([])
+    setError(null)
+    narrated.current = null
+    if (!sessionId) return
+    let stop = false
+    const load = () =>
+      api
+        .metrics(sessionId)
+        .then((m) => {
+          if (!stop) setMetrics(m)
+        })
+        .catch(() => undefined)
+    load()
+    const timer = setInterval(load, 4000)
+    return () => {
+      stop = true
+      clearInterval(timer)
+    }
+  }, [sessionId])
+
+  const hasVisits = !!metrics?.zones.some((z) => z.visits > 0)
+  useEffect(() => {
+    if (!sessionId || !hasVisits || narrated.current === sessionId) return
+    let stop = false
+    narrated.current = sessionId
+    const take = (advice: WorkflowAdvice) => {
+      if (!stop && advice.session_id === sessionId) setBase(advice)
+    }
+    api
+      .workflowAdvice(sessionId)
+      .then(take)
+      .catch(() => api.workflowAdvice(sessionId).then(take))
+      .catch((e) => {
+        narrated.current = null
+        if (!stop) setError(e instanceof Error ? e.message : String(e))
+      })
+    return () => {
+      stop = true
+    }
+  }, [sessionId, hasVisits])
+
+  useEffect(() => {
+    if (!turns.length) return
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight })
+  }, [turns.length])
+
+  const shown = base && base.session_id === sessionId ? base : null
+  const rows = (shown?.process_times?.length ? shown.process_times : (metrics?.zones ?? []).filter((z) => z.visits > 0))
+    .map((z) => ({ id: z.zone_id, name: z.name, seconds: 'process_time_s' in z ? z.process_time_s : z.mean_dwell_s }))
+    .sort((a, b) => (b.seconds ?? 0) - (a.seconds ?? 0))
+
+  const ask = async () => {
+    const text = question.trim()
+    if (!sessionId || !text || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const advice = await api.workflowAdvice(sessionId, text)
+      setTurns((cur) => [...cur, { question: text, advice }])
+      setQuestion('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const lookFurther = async (id: string, text: string) => {
+    if (!sessionId || digging) return
+    setDigging(id)
+    try {
+      const advice = await api.workflowAdvice(sessionId, `Explain this further from the measured facts only: ${text}`.slice(0, 400))
+      setDeeper((cur) => ({ ...cur, [id]: advice.summary || advice.reason || 'No further detail.' }))
+    } catch (e) {
+      setDeeper((cur) => ({ ...cur, [id]: e instanceof Error ? e.message : String(e) }))
+    } finally {
+      setDigging(null)
+    }
+  }
+
+  const duration = metrics ? `${Math.floor(metrics.duration_ms / 60000)}:${((metrics.duration_ms % 60000) / 1000).toFixed(1).padStart(4, '0')}` : null
+  const cards = [
+    ...(shown?.summary ? [{ id: 'summary', text: shown.summary }] : []),
+    ...(shown?.suggestions ?? []).map((text, i) => ({ id: `s-${i}`, text })),
+  ]
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {view === 'overview' && (
+        <div className="shrink-0 px-3 pt-3">
+          <div className="rounded-xl border border-white/10 bg-[#1c2740] px-3 py-3">
+            <div className="flex items-baseline justify-between gap-3 text-xs text-mute">
+              <span>{metrics?.simulated || shown?.simulated ? 'Simulated session' : sessionId ? 'Live session' : 'No session'}</span>
+              {duration && <span className="font-mono">Duration {duration}</span>}
+            </div>
+            {rows.length > 0 ? (
+              <ul className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+                {rows.map((z) => (
+                  <li key={z.id} className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-paper">{z.name}</span>
+                    <span className="font-mono text-sm text-paper">{z.seconds != null ? `${z.seconds.toFixed(1)} s` : '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm leading-relaxed text-mute">{sessionId ? 'Waiting for a zone visit.' : 'Open a session. Station times show up here.'}</p>
+            )}
+          </div>
+        </div>
+      )}
+      <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-3 py-3" aria-live="polite">
+        {view === 'overview' && (
+          <div className="space-y-3">
+            <div>
+              <p className="px-1 text-xs font-medium text-mute">Analysis</p>
+              <div className="mt-2 space-y-2">
+                {shown?.status === 'unavailable' && shown.reason && <p className="rounded-xl border border-white/10 px-3 py-3 text-sm leading-relaxed text-amber-200">{shown.reason}</p>}
+                {cards.map((card) => (
+                  <AnalysisCard
+                    key={card.id}
+                    text={card.text}
+                    open={openId === card.id}
+                    detail={deeper[card.id] ?? null}
+                    busy={digging === card.id}
+                    onToggle={() => setOpenId(openId === card.id ? null : card.id)}
+                    onDeeper={() => lookFurther(card.id, card.text)}
+                  />
+                ))}
+                {shown?.status === 'ok' && cards.length === 0 && <p className="px-1 text-sm text-mute">No analysis yet.</p>}
+                {!shown && sessionId && rows.length > 0 && <p className="px-1 text-sm text-mute">Reading the station times.</p>}
+              </div>
+            </div>
+            {turns
+              .filter((t) => t.advice.session_id === sessionId)
+              .map((t, i) => (
+                <div key={`${i}-${t.question}`} className="space-y-2 px-1">
+                  <p className="text-right text-sm text-paper">{t.question}</p>
+                  <p className="text-sm leading-relaxed text-mute">{t.advice.summary || t.advice.reason}</p>
+                </div>
+              ))}
+          </div>
+        )}
+        {view === 'insights' && (
+          <div className="space-y-3 text-sm">
+            {shown?.handoffs?.length ? (
+              <ul className="space-y-2">
+                {shown.handoffs.map((h) => (
+                  <li key={`${h.from_zone}-${h.to_zone}`} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+                    <p className="text-paper">
+                      {h.from_name} to {h.to_name}
+                    </p>
+                    <p className="mt-1 text-mute">
+                      {h.count} moves · {h.mean_gap_s.toFixed(1)} s between
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-mute">No moves between stations yet.</p>
+            )}
+            {metrics?.data_quality?.calibration_rmse_m != null && (
+              <p className="text-mute">Calibration error {metrics.data_quality.calibration_rmse_m.toFixed(3)} m</p>
+            )}
+          </div>
+        )}
+        {view === 'notes' && (
+          <div className="space-y-2 text-sm">
+            {model?.notes?.length ? (
+              model.notes.map((n, i) => (
+                <p key={i} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-mute">
+                  {n}
+                </p>
+              ))
+            ) : (
+              <p className="text-mute">{model ? `${model.name}. No notes yet.` : 'No workspace loaded.'}</p>
+            )}
+          </div>
+        )}
+        {notice && <p className="mt-3 text-sm text-mute">{notice}</p>}
+        {error && <p className="mt-3 text-sm text-rose-200">{error}</p>}
+      </div>
+      <form
+        className="flex shrink-0 items-center gap-2 border-t border-white/[0.08] px-3 py-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          ask()
+        }}
+      >
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Ask about this room</span>
+          <input
+            value={question}
+            disabled={!sessionId || busy}
+            placeholder={sessionId ? 'Ask about this room…' : 'Start a session to ask'}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                ask()
+              }
+            }}
+            className="input w-full"
+          />
+        </label>
+        <button className="btn btn-primary" type="submit" disabled={!sessionId || busy || !question.trim()}>
+          {busy ? 'Sending' : 'Send'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+export function RightPanel() {
+  const [pane, setPane] = useState<'chat' | 'edit'>('chat')
+  const [view, setView] = useState<'overview' | 'insights' | 'notes'>('overview')
+  const [more, setMore] = useState<Tab>('entities')
+  const running = useTwin((s) => s.status.state === 'running')
+  const [job, setJob] = useState<AnalysisJob | null>(null)
+  const [computeError, setComputeError] = useState<string | null>(null)
+  const applied = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!job || job.state !== 'running') return
+    const timer = setInterval(async () => {
+      try {
+        const next = await api.analysisStatus(job.job_id)
+        setJob(next)
+        if (next.state === 'done' && next.result && applied.current !== next.job_id) {
+          applied.current = next.job_id
+          const keepsRoom = (useScene.getState().model?.fixtures.length ?? 0) > 0 && next.result.model.fixtures.length === 0
+          if (!keepsRoom) await applyWorkspace(next.result.model.model_id)
+        }
+        if (next.state === 'error') setComputeError(next.error ?? 'Workspace compute failed')
+      } catch (e) {
+        setComputeError(e instanceof Error ? e.message : String(e))
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [job])
+
+  const compute = async () => {
+    setComputeError(null)
+    try {
+      const started = await api.analyzeWorkspace({ video_id: null })
+      setJob(started)
+      if (started.state === 'done' && started.result && applied.current !== started.job_id) {
+        applied.current = started.job_id
+        const keepsRoom = (useScene.getState().model?.fixtures.length ?? 0) > 0 && started.result.model.fixtures.length === 0
+        if (!keepsRoom) await applyWorkspace(started.result.model.model_id)
+      }
+      if (started.state === 'error') setComputeError(started.error ?? 'Workspace compute failed')
+    } catch (e) {
+      setComputeError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const notice = computeError ?? (job?.state === 'running' ? job.stage || 'Computing the floor' : null)
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <span className="text-xs font-medium">Workspace</span>
+        <span className="flex items-center gap-3">
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 border-b py-2 capitalize ${tab === t ? 'border-paper text-paper' : 'border-transparent text-mute hover:text-paper'}`}
+            className="text-xs font-medium text-mute transition hover:text-paper disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!running || job?.state === 'running'}
+            title={running ? 'Measure the floor from this session, including the simulation' : 'Start a session first, including the simulation'}
+            onClick={compute}
           >
-            {t}
+            {job?.state === 'running' ? 'Computing' : 'Compute'}
           </button>
-        ))}
+          <button className="text-xs font-medium text-mute transition hover:text-paper" onClick={() => setPane(pane === 'chat' ? 'edit' : 'chat')}>
+            {pane === 'chat' ? 'Edit' : 'Advice'}
+          </button>
+        </span>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        {tab === 'workspace' && <WorkspacePanel />}
-        {tab === 'entities' && <EntitiesTab />}
-        {tab === 'events' && <EventsTab />}
-        {tab === 'metrics' && <MetricsTab />}
-        {tab === 'scene' && <SceneTab />}
-      </div>
+      {pane === 'chat' && (
+        <div className="px-3">
+          <div className="seg w-full">
+            {(['overview', 'insights', 'notes'] as const).map((item) => (
+              <button key={item} className={`flex-1 capitalize ${view === item ? 'on' : ''}`} onClick={() => setView(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {pane === 'chat' ? (
+        <AdviceAgent notice={notice} view={view} />
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <WorkspacePanel />
+          <details className="mt-6">
+            <summary className="cursor-pointer text-sm text-mute">More</summary>
+            <div className="mt-4">
+              <div className="seg">
+                {(['entities', 'events', 'metrics', 'scene'] as Tab[]).map((t) => (
+                  <button key={t} className={more === t ? 'on' : ''} onClick={() => setMore(t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 text-xs">
+                {more === 'entities' && <EntitiesTab />}
+                {more === 'events' && <EventsTab />}
+                {more === 'metrics' && <MetricsTab />}
+                {more === 'scene' && <SceneTab />}
+              </div>
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   )
 }

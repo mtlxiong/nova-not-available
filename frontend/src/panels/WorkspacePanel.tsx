@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { withBackend } from '../lib/backend'
 import { useVideos } from '../state/videos'
@@ -6,17 +6,10 @@ import { AddVideosButton } from './AddVideosButton'
 import { fixtureName, localId, PROVENANCE_COLORS } from '../lib/model'
 import { ZONE_KINDS, type AnalysisJob, type SpatialModel, type SpatialModelListItem, type ZoneKind } from '../lib/types'
 import { reloadLiveModel } from '../lib/workspace'
-import { watchWorldGeneration } from '../lib/worldgen'
+import { setWorldView } from '../lib/worldgen'
 import { useTwin } from '../state/twin'
 import { useCalibration, useScene, useWorkspace } from '../state/ui'
 import { refreshActiveCalibration } from './CalibrationPanel'
-
-const SOURCE_BADGE: Record<SpatialModel['source'], string> = {
-  analyzed: 'bg-amber-900 text-amber-200',
-  manual: 'bg-blue-900 text-blue-200',
-  template: 'bg-zinc-700 text-zinc-300',
-  blank: 'bg-zinc-800 text-zinc-400',
-}
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
@@ -36,7 +29,7 @@ function edit(fn: (m: SpatialModel) => void) {
   useWorkspace.getState().set({ draft: next, dirty: true })
 }
 
-async function applyWorkspace(modelId: string) {
+export async function applyWorkspace(modelId: string) {
   await api.activateSpatialModel(modelId)
   useWorkspace.getState().set({ draft: null, dirty: false, zoneDraft: null })
   await reloadLiveModel()
@@ -45,9 +38,9 @@ async function applyWorkspace(modelId: string) {
 
 function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
   const status = useTwin((s) => s.status)
-  const live = status.state === 'running' && !status.simulated
+  const live = status.state === 'running'
   const videos = useVideos((s) => s.videos)
-  const [from, setFrom] = useState<'video' | 'live'>('video')
+  const [from, setFrom] = useState<'video' | 'live'>(status.state === 'running' ? 'live' : 'video')
   const [videoId, setVideoId] = useState('')
   const [calibrationMode, setCalibrationMode] = useState<'auto' | 'existing'>('auto')
   const [calibrationId, setCalibrationId] = useState('')
@@ -105,15 +98,12 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
   const result = job?.state === 'done' ? job.result : null
   return (
     <div className="space-y-2 border-t border-white/10 pt-3">
-      <div className="text-[12px] font-medium text-paper">Analyze a workspace</div>
-      <p className="text-[11px] text-zinc-500">
-        Removes people to get a clean background, estimates the floor plane, labels objects with an open-vocabulary detector, and proposes activity zones from where people actually are. Nothing is assumed about the type of space.
-      </p>
+      <div className="text-sm font-medium text-paper">Analyze</div>
       <div className="flex gap-3">
         <label className="flex items-center gap-1">
           <input type="radio" checked={from === 'video'} onChange={() => setFrom('video')} /> Video file
         </label>
-        <label className={`flex items-center gap-1 ${live ? '' : 'opacity-40'}`} title={live ? '' : 'Start a webcam or video session first'}>
+        <label className={`flex items-center gap-1 ${live ? '' : 'opacity-40'}`} title={live ? '' : 'Start a session first, including the simulation'}>
           <input type="radio" disabled={!live} checked={from === 'live'} onChange={() => setFrom('live')} /> Running session
         </label>
       </div>
@@ -322,6 +312,7 @@ export function WorkspacePanel() {
   const [list, setList] = useState<SpatialModelListItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const worldBuild = useScene((s) => s.worldBuild)
+  const imageRef = useRef<HTMLInputElement>(null)
 
   const refreshList = () => {
     api.spatialModels().then(setList).catch(() => undefined)
@@ -362,125 +353,145 @@ export function WorkspacePanel() {
     }
   }
 
-  const generateWorld = async () => {
-    useScene.getState().set({ worldBuild: 'Sending the background photo to World Labs…' })
+  const generateWorld = () => {
+    void setWorldView(true)
+  }
+
+  const generateFromImage = async (file: File) => {
+    const slug = (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'room').slice(0, 60)
+    useScene.getState().set({ worldBuild: 'Sending the reference image to World Labs…' })
     try {
-      const res = await api.generateWorldFromWorkspace(model.model_id)
-      if (res.status === 'running') watchWorldGeneration(res.slug)
-      else useScene.getState().set({ worldBuild: res.reason ?? `Image-Blaster ${res.status}` })
+      const res = await api.generateScene(slug, file)
+      useScene.getState().set({ worldBuild: res.status === 'unavailable' ? `World Labs unavailable. ${res.reason ?? ''}`.trim() : `World Labs ${res.status}` })
+      if (res.status !== 'running') return
+      const poll = setInterval(async () => {
+        const s = await api.generationStatus(slug)
+        useScene.getState().set({ worldBuild: s.reason ? s.reason : `World Labs ${s.status}` })
+        if (s.status === 'running') return
+        clearInterval(poll)
+        const scenes = await api.scenes()
+        const current = scenes.find((sc) => sc.scene_id === slug) ?? scenes[0]
+        if (current) useScene.getState().set({ scenes, sceneId: current.scene_id, alignment: current.config.alignment })
+      }, 5000)
     } catch (e) {
       useScene.getState().set({ worldBuild: errText(e) })
     }
   }
 
+  const runWorldLabs = () => {
+    if (model.background_url) generateWorld()
+    else imageRef.current?.click()
+  }
+
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <input
-            className="input min-w-0 flex-1 font-semibold"
-            value={model.name}
-            disabled={readOnly}
-            onChange={(e) => edit((m) => void (m.name = e.target.value))}
-          />
-          <span className={`rounded px-1.5 text-[10px] uppercase ${SOURCE_BADGE[model.source]}`}>{model.source}</span>
-        </div>
-        <div className="font-mono text-[11px] text-zinc-500">
-          {model.width_m.toFixed(1)} × {model.depth_m.toFixed(1)} m · {model.fixtures.length} objects · {model.zones.length} zones
-          {model.calibration_id && ` · cal ${model.calibration_id.slice(0, 12)}`}
-        </div>
-        {model.source === 'template' && (
-          <div className="rounded bg-amber-950 px-2 py-1 text-[11px] text-amber-200">Template layout (used by the simulation). It is not derived from any camera.</div>
-        )}
-        {model.notes.length > 0 && (
-          <ul className="list-disc pl-4 text-[11px] text-zinc-400">
-            {model.notes.map((n, i) => (
-              <li key={i}>{n}</li>
-            ))}
-          </ul>
-        )}
-        {readOnly && <div className="text-[11px] text-zinc-500">Replay: showing the workspace this session was recorded against (read-only).</div>}
-        {!readOnly && (dirty || builtIn) && (
-          <div className="flex gap-1">
-            {dirty && !builtIn && (
-              <button className="btn btn-primary flex-1" onClick={() => save(false)}>
-                Save changes
-              </button>
-            )}
-            {(dirty || model.source === 'template') && (
-              <button className="btn flex-1" onClick={() => save(true)}>
-                Save as new workspace
-              </button>
-            )}
-            {dirty && (
-              <button className="btn" onClick={() => useWorkspace.getState().set({ draft: null, dirty: false, zoneDraft: null })}>
-                Discard
-              </button>
-            )}
-          </div>
-        )}
-        {error && <div className="text-red-400">{error}</div>}
-      </div>
-
-      {!readOnly && <AnalyzeForm onListChanged={refreshList} />}
-
+    <div className="space-y-5">
       <div>
-        <div className="mb-1 flex items-center justify-between">
-          <span className="kicker">Objects</span>
-          <span className="flex gap-2 text-[11px]">
-            <label className="flex items-center gap-1">
-              <input type="checkbox" checked={showLabels} onChange={(e) => useScene.getState().set({ showLabels: e.target.checked })} /> 3D labels
-            </label>
-            <label className="flex items-center gap-1">
-              <input type="checkbox" checked={showObjects} onChange={(e) => useScene.getState().set({ showObjects: e.target.checked })} /> on video
-            </label>
-          </span>
-        </div>
-        <ObjectsEditor model={model} readOnly={readOnly} />
+        <input
+          className="w-full bg-transparent text-base font-medium text-paper outline-none placeholder:text-mute disabled:opacity-60"
+          value={model.name}
+          disabled={readOnly}
+          aria-label="Workspace name"
+          onChange={(e) => edit((m) => void (m.name = e.target.value))}
+        />
+        <p className="mt-3 font-mono text-sm text-paper">
+          {model.width_m.toFixed(1)} × {model.depth_m.toFixed(1)} m
+        </p>
+        <p className="mt-1 text-sm text-mute">
+          {model.fixtures.length} objects · {model.zones.length} zones
+          {model.source !== 'analyzed' ? ` · ${model.source}` : ''}
+        </p>
       </div>
 
-      <div>
-        <div className="kicker mb-1">Zones</div>
-        <ZonesEditor model={model} readOnly={readOnly} />
-      </div>
-
-      {model.background_url && !readOnly && (
-        <div className="space-y-1">
-          <button className="btn w-full" onClick={generateWorld} title="Optional. Sends the background plate to World Labs Marble and needs WORLD_LABS_API_KEY.">
-            Optional: World Labs splat…
+      {!readOnly && (
+        <div className="space-y-2">
+          <button
+            className="btn"
+            onClick={runWorldLabs}
+            title={model.background_url ? 'Build a Gaussian splat from this workspace background. Needs a World Labs key.' : 'No background plate yet. Choose a reference image for World Labs.'}
+          >
+            Run World Labs
           </button>
-          <p className="text-[11px] text-zinc-500">The room uses stock materials and does not need a World Labs key. This builds a photoreal Gaussian splat instead, and only if the key is set.</p>
-          {worldBuild && <div className="text-[11px] text-amber-200">{worldBuild}</div>}
+          <input ref={imageRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && generateFromImage(e.target.files[0])} />
+          {worldBuild && <p className="text-sm text-mute">{worldBuild}</p>}
         </div>
       )}
+      {error && <p className="text-sm text-rose-200">{error}</p>}
 
-      <div>
-        <div className="kicker mb-1">Saved workspaces</div>
-        <div className="space-y-1">
-          {list.map((w) => (
-            <div key={w.model_id} className={`flex items-center gap-1 rounded-lg px-1.5 py-1 ${w.model_id === model.model_id ? 'bg-white/10' : ''}`}>
-              <span className={`rounded px-1 text-[9px] uppercase ${SOURCE_BADGE[w.source]}`}>{w.source}</span>
-              <span className="min-w-0 flex-1 truncate" title={w.model_id}>
-                {w.name}
-              </span>
-              <span className="font-mono text-[10px] text-zinc-500">
-                {w.fixtures}o {w.zones}z
-              </span>
-              {w.active ? (
-                <span className="px-1 text-[10px] text-emerald-400">active</span>
-              ) : (
-                <button className="btn px-1.5" disabled={readOnly} onClick={() => applyWorkspace(w.model_id).then(refreshList).catch((e) => setError(errText(e)))}>
-                  Use
+      <div className="space-y-4 text-sm">
+          {model.notes.length > 0 && (
+            <ul className="space-y-1 text-mute">
+              {model.notes.map((n, i) => (
+                <li key={i}>{n}</li>
+              ))}
+            </ul>
+          )}
+          {readOnly && <p className="text-mute">Replay is read-only.</p>}
+          {!readOnly && (dirty || builtIn) && (
+            <div className="flex flex-wrap gap-1">
+              {dirty && !builtIn && (
+                <button className="btn btn-primary" onClick={() => save(false)}>
+                  Save
                 </button>
               )}
-              {w.source !== 'template' && w.source !== 'blank' && (
-                <button className="btn px-1.5" disabled={readOnly} onClick={() => remove(w.model_id)}>
-                  ✕
+              {(dirty || model.source === 'template') && (
+                <button className="btn" onClick={() => save(true)}>
+                  Save copy
+                </button>
+              )}
+              {dirty && (
+                <button className="btn" onClick={() => useWorkspace.getState().set({ draft: null, dirty: false, zoneDraft: null })}>
+                  Discard
                 </button>
               )}
             </div>
-          ))}
-        </div>
+          )}
+
+          {!readOnly && <AnalyzeForm onListChanged={refreshList} />}
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-paper">Objects</span>
+              <span className="flex gap-3 text-mute">
+                <label className="flex items-center gap-1">
+                  <input type="checkbox" checked={showLabels} onChange={(e) => useScene.getState().set({ showLabels: e.target.checked })} /> Labels
+                </label>
+                <label className="flex items-center gap-1">
+                  <input type="checkbox" checked={showObjects} onChange={(e) => useScene.getState().set({ showObjects: e.target.checked })} /> Video
+                </label>
+              </span>
+            </div>
+            <ObjectsEditor model={model} readOnly={readOnly} />
+          </div>
+
+          <div>
+            <div className="mb-2 text-paper">Zones</div>
+            <ZonesEditor model={model} readOnly={readOnly} />
+          </div>
+
+          <div className="space-y-1">
+            {list.map((w) => (
+              <div key={w.model_id} className={`flex items-center gap-2 py-1 ${w.model_id === model.model_id ? 'text-paper' : 'text-mute'}`}>
+                <span className="min-w-0 flex-1 truncate" title={w.model_id}>
+                  {w.name}
+                </span>
+                <span className="font-mono text-xs">
+                  {w.fixtures} · {w.zones}
+                </span>
+                {w.active ? (
+                  <span className="text-xs">Active</span>
+                ) : (
+                  <button className="btn px-1.5" disabled={readOnly} onClick={() => applyWorkspace(w.model_id).then(refreshList).catch((e) => setError(errText(e)))}>
+                    Use
+                  </button>
+                )}
+                {w.source !== 'template' && w.source !== 'blank' && (
+                  <button className="btn px-1.5" disabled={readOnly} onClick={() => remove(w.model_id)} aria-label={`Delete ${w.name}`}>
+                    Delete
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
       </div>
     </div>
   )

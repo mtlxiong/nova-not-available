@@ -264,8 +264,8 @@ export function VideoPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="kicker">Video</span>
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <span className="text-xs font-medium">Video</span>
         <span className="flex gap-1.5">
           {simulated && <span className="chip text-sky-200">Simulated</span>}
           {calEditing && <span className="chip text-amber-200">Click floor points</span>}
@@ -281,10 +281,8 @@ export function VideoPanel() {
           onClick={onClick}
         />
         {!hasFrame && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8 text-center text-sm leading-relaxed text-mute">
-            {mode === 'replay'
-              ? 'Replay reconstructs movement from stored observations; video frames are not stored.'
-              : 'No video. Choose a source and press Start.'}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8 text-center text-sm leading-relaxed text-mute">
+            {mode === 'replay' ? 'Replay has no stored frames.' : 'Waiting for the first frame.'}
           </div>
         )}
       </div>

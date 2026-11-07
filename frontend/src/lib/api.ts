@@ -111,7 +111,8 @@ export const api = {
   sessions: () => request<SessionSummary[]>('/api/sessions'),
   replay: (id: string) => request<ReplayData>(`/api/sessions/${id}/replay`),
   metrics: (id: string) => request<SessionMetrics>(`/api/sessions/${id}/metrics`),
-  workflowAdvice: (id: string) => request<WorkflowAdvice>(`/api/sessions/${id}/advice`, { method: 'POST' }),
+  workflowAdvice: (id: string, question?: string) =>
+    request<WorkflowAdvice>(`/api/sessions/${id}/advice`, json('POST', question ? { question } : {})),
   calibrations: () => request<CalibrationListItem[]>('/api/calibrations'),
   calibration: (id: string) => request<{ calibration: CalibrationResult; overlay: CalibrationOverlay }>(`/api/calibrations/${encodeURIComponent(id)}`),
   previewCalibration: (body: CalibrationBody) =>

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef } from 'react'
 import { api } from '../lib/api'
 import { snapshotAt } from '../lib/replay'
 import { useTwin } from '../state/twin'
-import { useReplay } from '../state/ui'
+import { useReplay, useScene } from '../state/ui'
 
 import { reloadLiveModel, showSessionModel } from '../lib/workspace'
+import { setWorldView } from '../lib/worldgen'
 
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${((ms % 60000) / 1000).toFixed(1).padStart(4, '0')}`
 
@@ -82,8 +83,10 @@ export function Timeline() {
   }, [data, selectedId])
 
   const duration = data?.session.duration_ms ?? 0
+  const worldView = useScene((s) => s.worldView)
+  const worldBuild = useScene((s) => s.worldBuild)
   return (
-    <div className="flex items-center gap-2 border-t border-white/10 px-3 py-2 text-xs">
+    <div className="flex items-center gap-2 border-t border-white/[0.08] bg-panel px-4 py-2 text-xs">
       <div className="flex items-center gap-1.5">
         <button className={`btn ${mode === 'live' ? 'btn-primary' : ''}`} onClick={goLive}>
           Live
@@ -150,10 +153,26 @@ export function Timeline() {
           {data.session.simulated && <span className="chip text-sky-200">Simulated</span>}
         </>
       ) : (
-        <span className="font-mono text-[11px] text-mute">
-          {status.state === 'running' ? `live · t=${fmt(playhead)}` : 'idle — start a session or open a stored session for replay'}
+        <span className="text-mute">
+          {status.state === 'running' ? `Live · ${fmt(playhead)}` : status.state}
         </span>
       )}
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        {worldBuild && (
+          <span className="max-w-72 truncate text-mute" title={worldBuild}>
+            {worldBuild}
+          </span>
+        )}
+        <button
+          type="button"
+          className={`btn shrink-0 ${worldView ? 'btn-primary' : ''}`}
+          aria-pressed={worldView}
+          title="Show the World Labs render of this workspace. The stations stay until you turn this on."
+          onClick={() => void setWorldView(!worldView)}
+        >
+          World Labs
+        </button>
+      </div>
     </div>
   )
 }

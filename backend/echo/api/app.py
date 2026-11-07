@@ -10,7 +10,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import cv2
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
+from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile, WebSocket
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,6 +32,10 @@ from echo.spatial.kitchen import KITCHEN_TEMPLATE_ID, default_kitchen
 from echo.video.sources import VIDEO_EXTENSIONS, VideoSourceError, validate_video_file
 
 log = logging.getLogger("echo.api")
+
+
+class AdviceRequest(BaseModel):
+    question: str | None = Field(default=None, max_length=400)
 
 
 def _configure_logging() -> None:
@@ -311,9 +316,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             row = s.get(SessionRow, session_id)
             if row is None:
                 raise SessionNotFound(session_id)
-            model_id, simulated = row.spatial_model_id, row.simulated
+            model_id, simulated, video_id = row.spatial_model_id, row.simulated, row.video_source_id
         if simulated:
             return default_kitchen()
+        if video_id:
+            matched = store.model_for_video(db, video_id)
+            if matched is not None:
+                return matched
         try:
             return store.get_spatial_model(db, model_id or store.BLANK_WORKSPACE_ID)
         except KeyError:
@@ -334,13 +343,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "session not found") from exc
 
     @app.post("/api/sessions/{session_id}/advice")
-    def advice(session_id: str):
+    def advice(session_id: str, body: AdviceRequest | None = Body(default=None)):
         """Measured station process times, plus owner suggestions from OpenRouter when a key is set."""
         try:
             measured = compute_session_metrics(db, session_id, _session_model(session_id))
         except SessionNotFound as exc:
             raise HTTPException(404, "session not found") from exc
-        return advise_session(measured)
+        question = body.question if body else None
+        return advise_session(measured, question=question)
 
     # ------------------------------------------------------------------------- websocket
     @app.websocket("/ws")
@@ -359,7 +369,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             candidate = (dist / path).resolve()
             if path and candidate.is_relative_to(dist.resolve()) and candidate.is_file():
                 return FileResponse(candidate)
-            return FileResponse(dist / "index.html")
+            return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
 

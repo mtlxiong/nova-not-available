@@ -12,7 +12,8 @@ function show(model: SpatialModel) {
 /** Live mode: the running session's workspace, else the active one. */
 export async function reloadLiveModel() {
   if (useTwin.getState().mode !== 'live') return
-  show(await api.spatialModel())
+  const id = useTwin.getState().status.spatial_model_id
+  show(id ? await api.spatialModelById(id) : await api.spatialModel())
 }
 
 /** Display name for a zone id in the shown workspace (ids are opaque in analyzed workspaces). */

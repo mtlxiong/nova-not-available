@@ -89,6 +89,19 @@ def test_advice_parses_model_json_and_does_not_send_track_ids():
     assert body["simulated"] is True
 
 
+def test_follow_up_question_is_sent_without_track_ids():
+    seen = {}
+
+    def transport(url, headers, body):
+        seen["input"] = body["input"]
+        return {"output_text": json.dumps({"summary": "Packing is the long station.", "suggestions": []})}
+
+    body = advise_session(_metrics(), question="Which station is slow?", api_key="test-key", transport=transport)
+    assert "Which station is slow?" in seen["input"]
+    assert "t1" not in seen["input"]
+    assert body["summary"] == "Packing is the long station."
+
+
 def test_extracts_fenced_json():
     text = extract_output_text({"output_text": '```json\n{"summary":"ok","suggestions":["a"]}\n```'})
     summary, suggestions = parse_advice_text(text)

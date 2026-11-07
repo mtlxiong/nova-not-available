@@ -4,10 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#101110',
-        panel: '#101110',
-        paper: '#eceae4',
-        mute: '#a3a89f',
+        ink: '#121a2b',
+        panel: '#182338',
+        paper: '#e8edf6',
+        mute: '#a8b8d0',
       },
       fontFamily: {
         sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],

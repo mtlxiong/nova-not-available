@@ -125,8 +125,9 @@ class SessionManager:
             if config.source == SourceKind.SIMULATION:
                 model = default_kitchen()  # the simulation's world is the labeled kitchen template
             else:
+                matched = store.model_for_video(self.db, config.file_id) if config.source == SourceKind.FILE and config.file_id else None
                 try:
-                    model = store.get_spatial_model(self.db, config.spatial_model_id)
+                    model = matched or store.get_spatial_model(self.db, config.spatial_model_id)
                 except KeyError as exc:
                     raise SessionStartError(f"unknown workspace {config.spatial_model_id}") from exc
             source, video_id, camera_id = build_source(config, self.settings, self.db, model)
