@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Model weights (downloaded on first use; see README)
+backend/models/*.pt
+weights/
+
+# Runtime data: database, uploads, analyzed workspace assets
+data/*
+!data/samples/
+data/samples/*.avi
+data/samples/*.jpg
+
+# Generated / third-party
+worlds/
+third_party/
+
+.DS_Store

@@ -1,0 +1,33 @@
+[project]
+name = "echo"
+version = "0.1.0"
+description = "ECHO: real-time computer-vision digital twin"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "sqlalchemy>=2.0",
+  "numpy>=1.26",
+  "opencv-contrib-python-headless>=4.10",
+  "python-multipart",
+  "lap>=0.5.12",
+]
+
+[project.optional-dependencies]
+yolo = ["ultralytics>=8.3"]
+# Open-vocabulary object labeling for workspace analysis (YOLO-World needs OpenAI CLIP).
+world = ["ultralytics>=8.3", "clip @ git+https://github.com/ultralytics/CLIP.git"]
+dev = ["pytest>=8", "httpx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["echo*"]

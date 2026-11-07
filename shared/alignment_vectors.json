@@ -1,0 +1,341 @@
+{
+ "description": "world (m, z-up) -> three.js render vectors; shared by backend and frontend tests",
+ "cases": [
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "yaw_deg": 0.0,
+    "scale": 1.0
+   },
+   "world": [
+    0,
+    0,
+    0
+   ],
+   "render": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "yaw_deg": 0.0,
+    "scale": 1.0
+   },
+   "world": [
+    9,
+    6,
+    0
+   ],
+   "render": [
+    9.0,
+    0.0,
+    -6.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "yaw_deg": 0.0,
+    "scale": 1.0
+   },
+   "world": [
+    2.4,
+    1.8,
+    0
+   ],
+   "render": [
+    2.4,
+    0.0,
+    -1.8
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "yaw_deg": 0.0,
+    "scale": 1.0
+   },
+   "world": [
+    1,
+    2,
+    1.5
+   ],
+   "render": [
+    1.0,
+    1.5,
+    -2.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     1.5,
+     0.2,
+     -3.0
+    ],
+    "yaw_deg": 90.0,
+    "scale": 1.0
+   },
+   "world": [
+    0,
+    0,
+    0
+   ],
+   "render": [
+    1.5,
+    0.2,
+    -3.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     1.5,
+     0.2,
+     -3.0
+    ],
+    "yaw_deg": 90.0,
+    "scale": 1.0
+   },
+   "world": [
+    9,
+    6,
+    0
+   ],
+   "render": [
+    -4.5,
+    0.2,
+    -12.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     1.5,
+     0.2,
+     -3.0
+    ],
+    "yaw_deg": 90.0,
+    "scale": 1.0
+   },
+   "world": [
+    2.4,
+    1.8,
+    0
+   ],
+   "render": [
+    -0.3,
+    0.2,
+    -5.4
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     1.5,
+     0.2,
+     -3.0
+    ],
+    "yaw_deg": 90.0,
+    "scale": 1.0
+   },
+   "world": [
+    1,
+    2,
+    1.5
+   ],
+   "render": [
+    -0.5,
+    1.7,
+    -4.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     -2.0,
+     0.0,
+     4.0
+    ],
+    "yaw_deg": -37.5,
+    "scale": 0.8
+   },
+   "world": [
+    0,
+    0,
+    0
+   ],
+   "render": [
+    -2.0,
+    0.0,
+    4.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     -2.0,
+     0.0,
+     4.0
+    ],
+    "yaw_deg": -37.5,
+    "scale": 0.8
+   },
+   "world": [
+    9,
+    6,
+    0
+   ],
+   "render": [
+    6.634198909,
+    0.0,
+    4.574986255
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     -2.0,
+     0.0,
+     4.0
+    ],
+    "yaw_deg": -37.5,
+    "scale": 0.8
+   },
+   "world": [
+    2.4,
+    1.8,
+    0
+   ],
+   "render": [
+    0.399854871,
+    0.0,
+    4.026393134
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     -2.0,
+     0.0,
+     4.0
+    ],
+    "yaw_deg": -37.5,
+    "scale": 0.8
+   },
+   "world": [
+    1,
+    2,
+    1.5
+   ],
+   "render": [
+    -0.391299041,
+    1.2,
+    3.217643799
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "yaw_deg": 180.0,
+    "scale": 2.5
+   },
+   "world": [
+    0,
+    0,
+    0
+   ],
+   "render": [
+    0.0,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "yaw_deg": 180.0,
+    "scale": 2.5
+   },
+   "world": [
+    9,
+    6,
+    0
+   ],
+   "render": [
+    -22.5,
+    1.0,
+    15.0
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "yaw_deg": 180.0,
+    "scale": 2.5
+   },
+   "world": [
+    2.4,
+    1.8,
+    0
+   ],
+   "render": [
+    -6.0,
+    1.0,
+    4.5
+   ]
+  },
+  {
+   "alignment": {
+    "translation": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "yaw_deg": 180.0,
+    "scale": 2.5
+   },
+   "world": [
+    1,
+    2,
+    1.5
+   ],
+   "render": [
+    -2.5,
+    4.75,
+    5.0
+   ]
+  }
+ ]
+}

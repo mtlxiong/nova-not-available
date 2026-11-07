@@ -1,0 +1,13 @@
+{
+  "camera_id": "vtest-camera",
+  "image_width": 768,
+  "image_height": 576,
+  "label": "DEMO MAPPING (not surveyed): vtest.avi walkable ground region mapped onto the 9x6 m kitchen floor",
+  "max_rmse_m": 0.25,
+  "points": [
+    { "image": [60, 470], "world": [0.0, 0.0] },
+    { "image": [760, 470], "world": [9.0, 0.0] },
+    { "image": [650, 160], "world": [9.0, 6.0] },
+    { "image": [120, 175], "world": [0.0, 6.0] }
+  ]
+}
