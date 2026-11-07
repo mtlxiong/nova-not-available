@@ -46,5 +46,22 @@ class Settings:
         self.worlds_dir.mkdir(parents=True, exist_ok=True)
 
 
+def load_repo_env() -> None:
+    """Load KEY=VALUE lines from the repo `.env`. Existing environment variables win."""
+    path = REPO_ROOT / ".env"
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
 def get_settings() -> Settings:
+    load_repo_env()
     return Settings()

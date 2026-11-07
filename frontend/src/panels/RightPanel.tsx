@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { withBackend } from '../lib/backend'
-import type { Alignment, ReplayEvent } from '../lib/types'
+import type { Alignment, ReplayEvent, WorkflowAdvice } from '../lib/types'
 import { entityColor, visualState } from '../scene/EntitiesLayer'
 import { useTwin } from '../state/twin'
 import { useReplay, useScene } from '../state/ui'
@@ -175,6 +175,8 @@ function MetricsTab() {
   const replay = useReplay((s) => s.data)
   const showHeatmap = useScene((s) => s.showHeatmap)
   const [error, setError] = useState<string | null>(null)
+  const [advice, setAdvice] = useState<WorkflowAdvice | null>(null)
+  const [adviceBusy, setAdviceBusy] = useState(false)
   const sessionId = mode === 'replay' ? replay?.session.session_id : liveSession
 
   const load = async () => {
@@ -192,6 +194,24 @@ function MetricsTab() {
       <div className="flex items-center gap-2">
         <button className="btn" disabled={!sessionId} onClick={load}>
           Compute metrics
+        </button>
+        <button
+          className="btn"
+          disabled={!sessionId || adviceBusy}
+          onClick={async () => {
+            if (!sessionId) return
+            setAdviceBusy(true)
+            setError(null)
+            try {
+              setAdvice(await api.workflowAdvice(sessionId))
+            } catch (e) {
+              setError(e instanceof Error ? e.message : String(e))
+            } finally {
+              setAdviceBusy(false)
+            }
+          }}
+        >
+          {adviceBusy ? 'Asking…' : 'Workflow advice'}
         </button>
         <label className="flex items-center gap-1">
           <input type="checkbox" checked={showHeatmap} onChange={(e) => useScene.getState().set({ showHeatmap: e.target.checked })} /> heatmap
@@ -260,6 +280,34 @@ function MetricsTab() {
             coordinates with 0.6 s smoothing. Orders: {metrics.orders.available ? 'linked' : metrics.orders.reason}.
           </div>
         </>
+      )}
+      {advice && advice.session_id === sessionId && (
+        <div className="space-y-1 rounded border border-zinc-700 p-2">
+          <div className="font-semibold text-zinc-200">
+            Station process time
+            {advice.simulated && <span className="ml-2 rounded bg-sky-900 px-1 font-normal text-sky-200">SIMULATED DATA</span>}
+          </div>
+          {advice.process_times.length === 0 && <div className="text-zinc-500">No zone visits in this session.</div>}
+          {advice.process_times.map((row) => (
+            <div key={row.zone_id} className="flex gap-2 font-mono">
+              <span className="flex-1 font-sans">{row.name}</span>
+              <span>{row.process_time_s?.toFixed(1) ?? '—'} s/visit</span>
+              <span className="text-zinc-500">{row.visits} visits</span>
+            </div>
+          ))}
+          {advice.handoffs.slice(0, 4).map((h) => (
+            <div key={`${h.from_zone}-${h.to_zone}`} className="text-zinc-400">
+              {h.from_name} → {h.to_name}: {h.mean_gap_s.toFixed(1)} s between stations ({h.count})
+            </div>
+          ))}
+          {advice.status === 'ok' && advice.summary && <div className="text-zinc-100">{advice.summary}</div>}
+          {advice.status === 'unavailable' && advice.reason && <div className="text-amber-400">{advice.reason}</div>}
+          <ul className="list-disc pl-4 text-zinc-200">
+            {advice.suggestions.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )

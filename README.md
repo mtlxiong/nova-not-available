@@ -69,6 +69,10 @@ Or build once (`npm run build`) and open http://127.0.0.1:8000, where the backen
 Headless equivalent: `backend/.venv/bin/python backend/scripts/analyze_workspace.py data/samples/vtest.avi`.
 It writes a debug overlay and the floor texture to `/tmp/echo-analysis`.
 
+### Workflow advice
+
+On the Metrics tab, **Workflow advice** measures station process time (mean seconds per zone visit) and the gap between stations from the stored session. When `OPENROUTER_API_KEY` is set, those measured facts are sent to [OpenRouter](https://openrouter.ai/docs/quickstart) (`POST /api/v1/responses`, model `~openai/gpt-sol-latest`) and the reply is shown as owner suggestions. The key is read from the environment or the repo `.env` file and is never sent to the browser. Tracks stay anonymous: the model does not receive per-person identities and is not asked to rank staff. If the key is missing, the measured times still appear.
+
 ### Optional: photoreal 3D world (Image-Blaster)
 
 The **Generate 3D world from this view** button sends the people-free background plate to
