@@ -363,3 +363,26 @@ export interface SessionMetrics {
   orders: { available: boolean; reason?: string }
   queues: { available: boolean; reason?: string }
 }
+
+export interface ProcessTime {
+  zone_id: string
+  name: string
+  kind: string
+  visits: number
+  process_time_s: number | null
+  total_dwell_s: number
+  max_occupancy: number
+  mean_occupancy: number
+}
+
+export interface WorkflowAdvice {
+  session_id: string
+  simulated: boolean
+  model: string
+  status: 'ok' | 'unavailable'
+  reason: string | null
+  summary: string | null
+  suggestions: string[]
+  process_times: ProcessTime[]
+  handoffs: { from_zone: string; from_name: string; to_zone: string; to_name: string; count: number; mean_gap_s: number }[]
+}

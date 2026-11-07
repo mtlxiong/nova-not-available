@@ -10,6 +10,7 @@ import type {
   SessionConfig,
   SessionMetrics,
   SessionStatusMessage,
+  WorkflowAdvice,
   SessionSummary,
   SpatialModel,
   SpatialModelListItem,
@@ -110,6 +111,7 @@ export const api = {
   sessions: () => request<SessionSummary[]>('/api/sessions'),
   replay: (id: string) => request<ReplayData>(`/api/sessions/${id}/replay`),
   metrics: (id: string) => request<SessionMetrics>(`/api/sessions/${id}/metrics`),
+  workflowAdvice: (id: string) => request<WorkflowAdvice>(`/api/sessions/${id}/advice`, { method: 'POST' }),
   calibrations: () => request<CalibrationListItem[]>('/api/calibrations'),
   calibration: (id: string) => request<{ calibration: CalibrationResult; overlay: CalibrationOverlay }>(`/api/calibrations/${encodeURIComponent(id)}`),
   previewCalibration: (body: CalibrationBody) =>

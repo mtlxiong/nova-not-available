@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from echo.advisor import advise_session
 from echo.analysis.analyzer import AnalysisError, WorkspaceAnalyzer
 from echo.analytics.metrics import compute_session_metrics
 from echo.api.hub import Hub
@@ -331,6 +332,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return compute_session_metrics(db, session_id, _session_model(session_id))
         except SessionNotFound as exc:
             raise HTTPException(404, "session not found") from exc
+
+    @app.post("/api/sessions/{session_id}/advice")
+    def advice(session_id: str):
+        """Measured station process times, plus owner suggestions from OpenRouter when a key is set."""
+        try:
+            measured = compute_session_metrics(db, session_id, _session_model(session_id))
+        except SessionNotFound as exc:
+            raise HTTPException(404, "session not found") from exc
+        return advise_session(measured)
 
     # ------------------------------------------------------------------------- websocket
     @app.websocket("/ws")
