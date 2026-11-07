@@ -144,7 +144,7 @@ export function TwinViewer() {
         </group>
         <CameraRig model={model} pose={pose} />
       </Canvas>
-      <div className="pointer-events-none absolute left-3 top-3 max-w-[70%] rounded-2xl bg-black/55 px-3 py-2.5 text-[11px] text-paper/90 shadow-panel ring-1 ring-white/10 backdrop-blur-md">
+      <div className="pointer-events-none absolute left-3 top-3 max-w-[70%] rounded-md bg-[#1a1c1a] px-3 py-2.5 text-[12px] text-paper ring-1 ring-white/10">
         {!blaster ? (
           <div>
             <div className="font-medium">{model.name}</div>

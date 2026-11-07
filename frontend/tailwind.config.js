@@ -4,18 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#090b10',
-        panel: '#12141a',
+        ink: '#101110',
+        panel: '#101110',
         paper: '#eceae4',
-        mute: '#9a968c',
-        brass: '#e4c48a',
+        mute: '#a3a89f',
       },
       fontFamily: {
-        sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-      },
-      boxShadow: {
-        panel: '0 18px 50px rgba(0, 0, 0, 0.35)',
+        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },
   },

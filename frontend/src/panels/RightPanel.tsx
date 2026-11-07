@@ -391,12 +391,12 @@ export function RightPanel() {
   const [tab, setTab] = useState<Tab>('workspace')
   return (
     <div className="flex h-full flex-col text-xs">
-      <div className="flex gap-0.5 border-b border-white/[0.06] p-2">
+      <div className="flex border-b border-white/10">
         {(['workspace', 'entities', 'events', 'metrics', 'scene'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-1.5 capitalize ${tab === t ? 'bg-white/10 text-paper' : 'text-mute hover:bg-white/[0.04] hover:text-paper'}`}
+            className={`flex-1 border-b py-2 capitalize ${tab === t ? 'border-paper text-paper' : 'border-transparent text-mute hover:text-paper'}`}
           >
             {t}
           </button>

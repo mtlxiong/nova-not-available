@@ -122,10 +122,10 @@ export function TopBar({ connected }: { connected: boolean }) {
   const stateDot = status.state === 'running' ? 'bg-emerald-400' : status.state === 'error' ? 'bg-rose-400' : 'bg-white/30'
 
   return (
-    <header className="shrink-0 border-b border-white/[0.06] bg-panel/80 px-3 py-2.5 backdrop-blur-md">
+    <header className="shrink-0 border-b border-white/10 px-3 py-2.5">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-[13px] font-semibold tracking-[0.28em]">ECHO</span>
+          <span className="text-sm font-semibold">ECHO</span>
           <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-rose-400'}`} title={connected ? 'connected' : 'backend disconnected'} />
         </div>
         <span className="chip">

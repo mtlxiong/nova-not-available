@@ -71,14 +71,14 @@ export default function App() {
           Backend not reachable: {loadError}
         </div>
       )}
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(300px,28%)_minmax(0,1fr)_minmax(320px,26%)] gap-2 px-2 pb-2 pt-2">
-        <section className="panel min-h-0">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(300px,28%)_minmax(0,1fr)_minmax(320px,26%)]">
+        <section className="min-h-0 border-r border-white/10">
           <VideoPanel />
         </section>
-        <section className="panel min-h-0">
+        <section className="min-h-0">
           <TwinViewer />
         </section>
-        <section className="panel min-h-0">
+        <section className="min-h-0 border-l border-white/10">
           <RightPanel />
         </section>
       </div>

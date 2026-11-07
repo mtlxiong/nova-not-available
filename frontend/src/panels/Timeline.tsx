@@ -83,7 +83,7 @@ export function Timeline() {
 
   const duration = data?.session.duration_ms ?? 0
   return (
-    <div className="mx-2 mb-2 flex items-center gap-2 rounded-2xl bg-panel px-3 py-2 text-xs shadow-panel ring-1 ring-white/[0.06]">
+    <div className="flex items-center gap-2 border-t border-white/10 px-3 py-2 text-xs">
       <div className="flex items-center gap-1.5">
         <button className={`btn ${mode === 'live' ? 'btn-primary' : ''}`} onClick={goLive}>
           Live
