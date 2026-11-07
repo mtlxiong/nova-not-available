@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type VideoInfo } from '../lib/api'
+import { api } from '../lib/api'
+import { useVideos } from '../state/videos'
+import { AddVideosButton } from './AddVideosButton'
 import type { SessionConfig, SourceKind } from '../lib/types'
 import { useTwin } from '../state/twin'
 import { useCalibration, useScene } from '../state/ui'
@@ -28,7 +30,7 @@ export function TopBar({ connected }: { connected: boolean }) {
   const sceneId = useScene((s) => s.sceneId)
   const [source, setSource] = useState<SourceKind>('simulation')
   const [cameraIndex, setCameraIndex] = useState(0)
-  const [videos, setVideos] = useState<VideoInfo[]>([])
+  const videos = useVideos((s) => s.videos)
   const [videoId, setVideoId] = useState<string>('')
   const [detector, setDetector] = useState<'yolo' | 'none'>('yolo')
   const [aruco, setAruco] = useState(true)
@@ -38,14 +40,13 @@ export function TopBar({ connected }: { connected: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [genStatus, setGenStatus] = useState<string | null>(null)
-  const uploadRef = useRef<HTMLInputElement>(null)
   const refImageRef = useRef<HTMLInputElement>(null)
   const running = status.state === 'running' || status.state === 'stopping'
 
   useEffect(() => {
-    api.videos().then((v) => {
-      setVideos(v)
-      if (v[0]) setVideoId((cur) => cur || v[0].video_id)
+    useVideos.getState().refresh().then(() => {
+      const list = useVideos.getState().videos
+      if (list[0]) setVideoId((cur) => cur || list[0].video_id)
     }).catch(() => undefined)
     api.calibrations().then(setCalibrations).catch(() => undefined)
   }, [status.state])
@@ -80,21 +81,6 @@ export function TopBar({ connected }: { connected: boolean }) {
     setBusy(true)
     try {
       await api.stopSession()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const upload = async (file: File) => {
-    setBusy(true)
-    setError(null)
-    try {
-      const v = await api.uploadVideo(file)
-      setVideos((vs) => [v, ...vs])
-      setVideoId(v.video_id)
-      setSource('file')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -157,10 +143,14 @@ export function TopBar({ connected }: { connected: boolean }) {
               </option>
             ))}
           </select>
-          <button className="btn" disabled={running || busy} onClick={() => uploadRef.current?.click()}>
-            Upload…
-          </button>
-          <input ref={uploadRef} type="file" accept="video/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+          <AddVideosButton
+            disabled={running}
+            onAdded={(added) => {
+              setVideoId(added[0].video_id)
+              setSource('file')
+            }}
+            onError={setError}
+          />
         </>
       )}
       {source !== 'simulation' && (

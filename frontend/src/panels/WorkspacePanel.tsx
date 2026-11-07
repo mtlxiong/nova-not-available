@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { api, type VideoInfo } from '../lib/api'
+import { api } from '../lib/api'
 import { withBackend } from '../lib/backend'
+import { useVideos } from '../state/videos'
+import { AddVideosButton } from './AddVideosButton'
 import { fixtureName, localId, PROVENANCE_COLORS } from '../lib/model'
 import { ZONE_KINDS, type AnalysisJob, type SpatialModel, type SpatialModelListItem, type ZoneKind } from '../lib/types'
 import { reloadLiveModel } from '../lib/workspace'
@@ -44,7 +46,7 @@ async function applyWorkspace(modelId: string) {
 function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
   const status = useTwin((s) => s.status)
   const live = status.state === 'running' && !status.simulated
-  const [videos, setVideos] = useState<VideoInfo[]>([])
+  const videos = useVideos((s) => s.videos)
   const [from, setFrom] = useState<'video' | 'live'>('video')
   const [videoId, setVideoId] = useState('')
   const [calibrationMode, setCalibrationMode] = useState<'auto' | 'existing'>('auto')
@@ -59,9 +61,9 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.videos().then((v) => {
-      setVideos(v)
-      if (v[0]) setVideoId((cur) => cur || v[0].video_id)
+    useVideos.getState().refresh().then(() => {
+      const list = useVideos.getState().videos
+      if (list[0]) setVideoId((cur) => cur || list[0].video_id)
     }).catch(() => undefined)
     api.calibrations().then(setCalibrations).catch(() => undefined)
   }, [status.state])
@@ -116,14 +118,17 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
         </label>
       </div>
       {from === 'video' && (
-        <select className="input w-full" value={videoId} onChange={(e) => setVideoId(e.target.value)}>
-          {videos.length === 0 && <option value="">upload a video from the top bar</option>}
-          {videos.map((v) => (
-            <option key={v.video_id} value={v.video_id}>
-              {v.name} ({v.width}×{v.height})
-            </option>
-          ))}
-        </select>
+        <div className="flex items-start gap-1">
+          <select className="input min-w-0 flex-1" value={videoId} onChange={(e) => setVideoId(e.target.value)}>
+            {videos.length === 0 && <option value="">no videos yet</option>}
+            {videos.map((v) => (
+              <option key={v.video_id} value={v.video_id}>
+                {v.name} ({v.width}×{v.height})
+              </option>
+            ))}
+          </select>
+          <AddVideosButton onAdded={(added) => setVideoId(added[0].video_id)} onError={setError} />
+        </div>
       )}
       <div className="space-y-1">
         <label className="flex items-center gap-1">
