@@ -53,9 +53,9 @@ export function CalibrationPanel() {
 
   const active = cal.preview?.calibration ?? cal.active
   return (
-    <div className="max-h-[45%] overflow-y-auto border-t border-zinc-800 px-3 py-2 text-xs">
+    <div className="max-h-[45%] overflow-y-auto border-t border-white/[0.06] px-3 py-2.5 text-xs">
       <div className="flex items-center justify-between">
-        <span className="font-semibold uppercase tracking-wide text-zinc-400">Calibration</span>
+        <span className="kicker">Calibration</span>
         <div className="flex gap-1">
           {!cal.editing ? (
             <button className="btn" disabled={!lastFrame} onClick={() => cal.set({ editing: true, points: [], preview: null, error: null })}>

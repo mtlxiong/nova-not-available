@@ -83,10 +83,10 @@ export function Timeline() {
 
   const duration = data?.session.duration_ms ?? 0
   return (
-    <div className="flex items-center gap-3 border-t border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs">
-      <div className="flex items-center gap-1">
+    <div className="mx-2 mb-2 flex items-center gap-2 rounded-2xl bg-panel px-3 py-2 text-xs shadow-panel ring-1 ring-white/[0.06]">
+      <div className="flex items-center gap-1.5">
         <button className={`btn ${mode === 'live' ? 'btn-primary' : ''}`} onClick={goLive}>
-          ● Live
+          Live
         </button>
         <select
           className="input max-w-64"
@@ -106,13 +106,13 @@ export function Timeline() {
       {mode === 'replay' && data ? (
         <>
           <button className="btn" onClick={() => seek(0)} title="Rewind">
-            ⏮
+            Rewind
           </button>
           <button className="btn" onClick={() => seek(playhead - 5000)} title="Back 5 s">
             −5s
           </button>
-          <button className="btn btn-primary w-14" onClick={() => useReplay.getState().set({ playing: !playing })}>
-            {playing ? '❚❚' : '▶'}
+          <button className="btn btn-primary min-w-14" onClick={() => useReplay.getState().set({ playing: !playing })}>
+            {playing ? 'Pause' : 'Play'}
           </button>
           <button className="btn" onClick={() => seek(playhead + 5000)} title="Forward 5 s">
             +5s
@@ -124,7 +124,7 @@ export function Timeline() {
               </option>
             ))}
           </select>
-          <span className="w-24 font-mono text-zinc-300">
+          <span className="w-28 font-mono text-[11px] text-paper/80">
             {fmt(playhead)} / {fmt(duration)}
           </span>
           <div className="relative flex-1">
@@ -147,10 +147,10 @@ export function Timeline() {
               ))}
             </div>
           </div>
-          {data.session.simulated && <span className="rounded bg-sky-900 px-1 text-sky-200">SIMULATED</span>}
+          {data.session.simulated && <span className="chip text-sky-200">Simulated</span>}
         </>
       ) : (
-        <span className="font-mono text-zinc-400">
+        <span className="font-mono text-[11px] text-mute">
           {status.state === 'running' ? `live · t=${fmt(playhead)}` : 'idle — start a session or open a stored session for replay'}
         </span>
       )}

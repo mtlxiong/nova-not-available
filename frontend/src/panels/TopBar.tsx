@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../lib/api'
 import { useVideos } from '../state/videos'
 import { AddVideosButton } from './AddVideosButton'
@@ -12,14 +12,23 @@ function Perf() {
   if (!f?.perf) return null
   const p = f.perf
   return (
-    <div className="flex gap-3 font-mono text-[11px] text-zinc-400" title="Measured by the running pipeline (EMA). e2e = browser receipt minus server capture time.">
-      <span>cap {p.capture_fps.toFixed(1)} fps</span>
-      <span>proc {p.process_fps.toFixed(1)} fps</span>
+    <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-mute" title="Measured by the running pipeline (EMA). e2e = browser receipt minus server capture time.">
+      <span>cap {p.capture_fps.toFixed(1)}</span>
+      <span>proc {p.process_fps.toFixed(1)}</span>
       <span>infer {p.inference_ms.toFixed(0)} ms</span>
       <span>track {p.tracking_ms.toFixed(0)} ms</span>
       <span>e2e {f.e2e_ms.toFixed(0)} ms</span>
       <span>drop {p.dropped_frames}</span>
     </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="kicker">{label}</span>
+      {children}
+    </label>
   )
 }
 
@@ -80,7 +89,7 @@ export function TopBar({ connected }: { connected: boolean }) {
   const stop = async () => {
     setBusy(true)
     try {
-      await api.stopSession()
+      useTwin.getState().setStatus(await api.stopSession())
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -110,119 +119,124 @@ export function TopBar({ connected }: { connected: boolean }) {
     }
   }
 
-  const stateColor = status.state === 'running' ? 'bg-emerald-500' : status.state === 'error' ? 'bg-red-500' : 'bg-zinc-500'
+  const stateDot = status.state === 'running' ? 'bg-emerald-400' : status.state === 'error' ? 'bg-rose-400' : 'bg-white/30'
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs">
-      <div className="flex items-center gap-2 pr-2">
-        <span className="text-sm font-bold tracking-[0.25em]">ECHO</span>
-        <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-500'}`} title={connected ? 'connected' : 'backend disconnected'} />
-      </div>
-
-      <label className="flex items-center gap-1">
-        Source
-        <select className="input" value={running && status.source_kind ? status.source_kind : source} disabled={running} onChange={(e) => setSource(e.target.value as SourceKind)}>
-          <option value="simulation">Simulation (labeled)</option>
-          <option value="webcam">Webcam</option>
-          <option value="file">Video file</option>
-        </select>
-      </label>
-      {source === 'webcam' && (
-        <label className="flex items-center gap-1">
-          index
-          <input className="input w-12" type="number" min={0} value={cameraIndex} disabled={running} onChange={(e) => setCameraIndex(parseInt(e.target.value) || 0)} />
-        </label>
-      )}
-      {source === 'file' && (
-        <>
-          <select className="input max-w-48" value={videoId} disabled={running} onChange={(e) => setVideoId(e.target.value)}>
-            {videos.length === 0 && <option value="">no uploads</option>}
-            {videos.map((v) => (
-              <option key={v.video_id} value={v.video_id}>
-                {v.name} ({v.width}×{v.height})
-              </option>
-            ))}
-          </select>
-          <AddVideosButton
-            disabled={running}
-            onAdded={(added) => {
-              setVideoId(added[0].video_id)
-              setSource('file')
-            }}
-            onError={setError}
-          />
-        </>
-      )}
-      {source !== 'simulation' && (
-        <>
-          <label className="flex items-center gap-1">
-            Detector
-            <select className="input" value={detector} disabled={running} onChange={(e) => setDetector(e.target.value as 'yolo' | 'none')}>
-              <option value="yolo">YOLO + ByteTrack</option>
-              <option value="none">ArUco only</option>
-            </select>
-          </label>
-          <label className="flex items-center gap-1">
-            Calibration
-            <select className="input max-w-44" value={calibrationId} disabled={running} onChange={(e) => setCalibrationId(e.target.value)}>
-              <option value="">none (calibrate live)</option>
-              {calibrations.map((c) => (
-                <option key={c.calibration_id} value={c.calibration_id}>
-                  {c.label ?? c.calibration_id} · {c.image_width}×{c.image_height}
+    <header className="shrink-0 border-b border-white/[0.06] bg-panel/80 px-3 py-2.5 backdrop-blur-md">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[13px] font-semibold tracking-[0.28em]">ECHO</span>
+          <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-rose-400'}`} title={connected ? 'connected' : 'backend disconnected'} />
+        </div>
+        <span className="chip">
+          <span className={`h-1.5 w-1.5 rounded-full ${stateDot}`} />
+          {status.state}
+        </span>
+        {status.simulated && <span className="chip text-sky-200">Simulated</span>}
+        {status.state === 'running' && !status.calibrated && <span className="chip text-amber-200">Uncalibrated</span>}
+        <div className="ml-auto flex items-end gap-2">
+          <Field label="Scene">
+            <select className="input max-w-52" value={sceneId} onChange={(e) => useScene.getState().set({ sceneId: e.target.value })}>
+              {scenes.map((s) => (
+                <option key={s.scene_id} value={s.scene_id}>
+                  {s.display_name}
+                  {s.kind === 'image-blaster' && s.synthetic ? ' (synthetic)' : ''}
                 </option>
               ))}
             </select>
-          </label>
-        </>
-      )}
-      <label className="flex items-center gap-1">
-        <input type="checkbox" checked={aruco} disabled={running} onChange={(e) => setAruco(e.target.checked)} /> ArUco
-      </label>
-      <label className="flex items-center gap-1">
-        fps
-        <input className="input w-12" type="number" min={1} max={30} value={fps} disabled={running} onChange={(e) => setFps(Math.max(1, parseFloat(e.target.value) || 10))} />
-      </label>
-      {!running ? (
-        <button className="btn btn-primary" disabled={busy || (source === 'file' && !videoId)} onClick={start}>
-          ▶ Start
-        </button>
-      ) : (
-        <button className="btn btn-danger" disabled={busy || status.state === 'stopping'} onClick={stop}>
-          ■ Stop
-        </button>
-      )}
-      <span className="flex items-center gap-1.5">
-        <span className={`h-2 w-2 rounded-full ${stateColor}`} />
-        {status.state}
-        {status.simulated && <span className="rounded bg-sky-900 px-1 text-sky-200">SIMULATED</span>}
-        {status.state === 'running' && !status.calibrated && <span className="rounded bg-amber-700 px-1 text-amber-100">uncalibrated</span>}
-      </span>
-      <Perf />
+          </Field>
+          <button className="btn mb-px" title="Optional. Upload a reference image and run World Labs Marble once. Needs WORLD_LABS_API_KEY." onClick={() => refImageRef.current?.click()}>
+            World Labs
+          </button>
+          <input ref={refImageRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && generate(e.target.files[0])} />
+        </div>
+      </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <label className="flex items-center gap-1">
-          Scene
-          <select className="input max-w-52" value={sceneId} onChange={(e) => useScene.getState().set({ sceneId: e.target.value })}>
-            {scenes.map((s) => (
-              <option key={s.scene_id} value={s.scene_id}>
-                {s.display_name}
-                {s.kind === 'image-blaster' && s.synthetic ? ' (synthetic)' : ''}
-              </option>
-            ))}
+      <div className="mt-2.5 flex flex-wrap items-end gap-2">
+        <Field label="Source">
+          <select className="input" value={running && status.source_kind ? status.source_kind : source} disabled={running} onChange={(e) => setSource(e.target.value as SourceKind)}>
+            <option value="simulation">Simulation</option>
+            <option value="webcam">Webcam</option>
+            <option value="file">Video file</option>
           </select>
+        </Field>
+        {source === 'webcam' && (
+          <Field label="Index">
+            <input className="input w-16" type="number" min={0} value={cameraIndex} disabled={running} onChange={(e) => setCameraIndex(parseInt(e.target.value) || 0)} />
+          </Field>
+        )}
+        {source === 'file' && (
+          <>
+            <Field label="Video">
+              <select className="input max-w-56" value={videoId} disabled={running} onChange={(e) => setVideoId(e.target.value)}>
+                {videos.length === 0 && <option value="">No uploads</option>}
+                {videos.map((v) => (
+                  <option key={v.video_id} value={v.video_id}>
+                    {v.name} ({v.width}×{v.height})
+                  </option>
+                ))}
+              </select>
+            </Field>
+<div className="flex flex-col gap-1">
+              <span className="kicker">Library</span>
+              <AddVideosButton
+                disabled={running}
+                onAdded={(added) => {
+                  setVideoId(added[0].video_id)
+                  setSource('file')
+                }}
+                onError={setError}
+              />
+            </div>
+          </>
+        )}
+        {source !== 'simulation' && (
+          <>
+            <Field label="Detector">
+              <select className="input" value={detector} disabled={running} onChange={(e) => setDetector(e.target.value as 'yolo' | 'none')}>
+                <option value="yolo">YOLO + ByteTrack</option>
+                <option value="none">ArUco only</option>
+              </select>
+            </Field>
+            <Field label="Calibration">
+              <select className="input max-w-48" value={calibrationId} disabled={running} onChange={(e) => setCalibrationId(e.target.value)}>
+                <option value="">None — calibrate live</option>
+                {calibrations.map((c) => (
+                  <option key={c.calibration_id} value={c.calibration_id}>
+                    {c.label ?? c.calibration_id} · {c.image_width}×{c.image_height}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
+        )}
+        <label className="mb-1 flex h-7 items-center gap-1.5 text-[11px] text-mute">
+          <input type="checkbox" checked={aruco} disabled={running} onChange={(e) => setAruco(e.target.checked)} />
+          ArUco
         </label>
-        <button className="btn" title="Upload a reference image and run Image-Blaster world generation once" onClick={() => refImageRef.current?.click()}>
-          Reference image…
-        </button>
-        <input ref={refImageRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && generate(e.target.files[0])} />
+        <Field label="fps">
+          <input className="input w-16" type="number" min={1} max={30} value={fps} disabled={running} onChange={(e) => setFps(Math.max(1, parseFloat(e.target.value) || 10))} />
+        </Field>
+        {!running ? (
+          <button className="btn btn-primary mb-px px-3" disabled={busy || (source === 'file' && !videoId)} onClick={start}>
+            Start
+          </button>
+        ) : (
+          <button className="btn btn-danger mb-px px-3" disabled={busy} onClick={stop}>
+            Stop
+          </button>
+        )}
+        <div className="mb-1 ml-auto">
+          <Perf />
+        </div>
       </div>
       {(error || status.message || genStatus) && (
-        <div className="w-full text-[11px]">
-          {error && <span className="mr-3 text-red-400">{error}</span>}
-          {status.state === 'error' && status.message && <span className="mr-3 text-red-400">{status.message}</span>}
-          {genStatus && <span className="text-zinc-400">{genStatus}</span>}
+        <div className="mt-2 text-[11px]">
+          {error && <span className="mr-3 text-rose-300">{error}</span>}
+          {status.state === 'error' && status.message && <span className="mr-3 text-rose-300">{status.message}</span>}
+          {genStatus && <span className="text-mute">{genStatus}</span>}
         </div>
       )}
-    </div>
+    </header>
   )
 }

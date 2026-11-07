@@ -30,7 +30,7 @@ function EntitiesTab() {
           <button
             key={id}
             onClick={() => select(selectedId === id ? null : id)}
-            className={`flex w-full items-center gap-2 rounded px-1.5 py-1 text-left ${selectedId === id ? 'bg-zinc-700' : 'hover:bg-zinc-800'}`}
+            className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left ${selectedId === id ? 'bg-white/10' : 'hover:bg-white/[0.04]'}`}
           >
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: vs === 'lost' ? '#71717a' : entityColor(e) }} />
             <span className="w-28 truncate font-mono">{e.label ?? id}</span>
@@ -93,7 +93,7 @@ function SelectedDetail() {
 
   if (!selectedId) return null
   return (
-    <div className="mt-3 rounded border border-zinc-700 p-2">
+    <div className="mt-3 rounded-xl bg-white/[0.03] p-2.5 ring-1 ring-white/[0.06]">
       <div className="flex items-center justify-between">
         <span className="font-mono font-semibold">{e?.label ?? selectedId}</span>
         <span className="text-zinc-400">{e ? `${e.class_name} · ${e.source}` : 'not present at this time'}</span>
@@ -152,7 +152,7 @@ function EventsTab() {
     <div className="space-y-0.5 font-mono">
       {recent.length === 0 && <div className="font-sans text-zinc-500">No events.</div>}
       {recent.map((ev, i) => (
-        <div key={i} className="flex cursor-pointer gap-2 hover:bg-zinc-800" onClick={() => ev.entity_id && select(ev.entity_id)}>
+        <div key={i} className="flex cursor-pointer gap-2 rounded px-1 hover:bg-white/[0.04]" onClick={() => ev.entity_id && select(ev.entity_id)}>
           <span className="w-14 text-zinc-500">{fmtT(ev.t_ms)}</span>
           <span
             className={`w-28 ${ev.kind.startsWith('zone.enter') ? 'text-emerald-400' : ev.kind.startsWith('zone.exit') ? 'text-orange-400' : ev.kind.startsWith('track.lost') ? 'text-amber-400' : 'text-zinc-400'}`}
@@ -201,7 +201,7 @@ function MetricsTab() {
       {error && <div className="text-red-400">{error}</div>}
       {metrics && (
         <>
-          <div className="rounded bg-zinc-800/60 p-1.5 text-zinc-400">
+          <div className="rounded-xl bg-white/[0.03] p-2 text-mute ring-1 ring-white/[0.06]">
             {metrics.simulated && <span className="mr-1 rounded bg-sky-900 px-1 text-sky-200">SIMULATED DATA</span>}
             {metrics.data_quality.positioned_observations}/{metrics.data_quality.observations} observations positioned · calibration RMSE{' '}
             {metrics.data_quality.calibration_rmse_m?.toFixed(3) ?? 'n/a'} m · {(metrics.duration_ms / 1000).toFixed(1)} s
@@ -294,12 +294,15 @@ function SceneTab() {
   const t = scene.alignment.translation
   return (
     <div className="space-y-2">
-      <div className="flex gap-1">
-        <button className="btn" onClick={() => scene.setView('iso')}>
-          Isometric
+      <div className="seg">
+        <button className={scene.view === 'iso' ? 'on' : ''} onClick={() => scene.setView('iso')}>
+          Iso
         </button>
-        <button className="btn" onClick={() => scene.setView('top')}>
-          Top-down
+        <button className={scene.view === 'top' ? 'on' : ''} onClick={() => scene.setView('top')}>
+          Top
+        </button>
+        <button className={scene.view === 'video' ? 'on' : ''} onClick={() => scene.setView('video')} title="Match the video camera that this workspace was analyzed from">
+          Video
         </button>
       </div>
       <div className="grid grid-cols-2 gap-1">
@@ -340,14 +343,18 @@ export function RightPanel() {
   const [tab, setTab] = useState<Tab>('workspace')
   return (
     <div className="flex h-full flex-col text-xs">
-      <div className="flex border-b border-zinc-800">
+      <div className="flex gap-0.5 border-b border-white/[0.06] p-2">
         {(['workspace', 'entities', 'events', 'metrics', 'scene'] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-1.5 capitalize ${tab === t ? 'border-b-2 border-sky-400 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 rounded-lg py-1.5 capitalize ${tab === t ? 'bg-white/10 text-paper' : 'text-mute hover:bg-white/[0.04] hover:text-paper'}`}
+          >
             {t}
           </button>
         ))}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {tab === 'workspace' && <WorkspacePanel />}
         {tab === 'entities' && <EntitiesTab />}
         {tab === 'events' && <EventsTab />}

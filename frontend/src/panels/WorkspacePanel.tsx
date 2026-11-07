@@ -104,8 +104,8 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
 
   const result = job?.state === 'done' ? job.result : null
   return (
-    <div className="space-y-2 rounded border border-zinc-800 p-2">
-      <div className="font-semibold text-zinc-300">Analyze a workspace</div>
+    <div className="space-y-2 rounded-xl bg-white/[0.03] p-2.5 ring-1 ring-white/[0.06]">
+      <div className="text-[12px] font-medium text-paper">Analyze a workspace</div>
       <p className="text-[11px] text-zinc-500">
         Removes people to get a clean background, estimates the floor plane, labels objects with an open-vocabulary detector, and proposes activity zones from where people actually are. Nothing is assumed about the type of space.
       </p>
@@ -426,7 +426,7 @@ export function WorkspacePanel() {
 
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <span className="font-semibold text-zinc-300">Objects</span>
+          <span className="kicker">Objects</span>
           <span className="flex gap-2 text-[11px]">
             <label className="flex items-center gap-1">
               <input type="checkbox" checked={showLabels} onChange={(e) => useScene.getState().set({ showLabels: e.target.checked })} /> 3D labels
@@ -440,24 +440,25 @@ export function WorkspacePanel() {
       </div>
 
       <div>
-        <div className="mb-1 font-semibold text-zinc-300">Zones</div>
+        <div className="kicker mb-1">Zones</div>
         <ZonesEditor model={model} readOnly={readOnly} />
       </div>
 
       {model.background_url && !readOnly && (
         <div className="space-y-1">
-          <button className="btn w-full" onClick={generateWorld} title="Runs Image-Blaster once on the people-free background plate (needs a World Labs key)">
-            Generate 3D world from this view (Image-Blaster)
+          <button className="btn w-full" onClick={generateWorld} title="Optional. Sends the background plate to World Labs Marble and needs WORLD_LABS_API_KEY.">
+            Optional: World Labs splat…
           </button>
+          <p className="text-[11px] text-zinc-500">The room uses stock materials and does not need a World Labs key. This builds a photoreal Gaussian splat instead, and only if the key is set.</p>
           {worldBuild && <div className="text-[11px] text-amber-200">{worldBuild}</div>}
         </div>
       )}
 
       <div>
-        <div className="mb-1 font-semibold text-zinc-300">Saved workspaces</div>
+        <div className="kicker mb-1">Saved workspaces</div>
         <div className="space-y-1">
           {list.map((w) => (
-            <div key={w.model_id} className={`flex items-center gap-1 rounded px-1 py-0.5 ${w.model_id === model.model_id ? 'bg-zinc-800' : ''}`}>
+            <div key={w.model_id} className={`flex items-center gap-1 rounded-lg px-1.5 py-1 ${w.model_id === model.model_id ? 'bg-white/10' : ''}`}>
               <span className={`rounded px-1 text-[9px] uppercase ${SOURCE_BADGE[w.source]}`}>{w.source}</span>
               <span className="min-w-0 flex-1 truncate" title={w.model_id}>
                 {w.name}

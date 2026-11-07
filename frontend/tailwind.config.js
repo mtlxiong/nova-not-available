@@ -3,9 +3,19 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      colors: {
+        ink: '#090b10',
+        panel: '#12141a',
+        paper: '#eceae4',
+        mute: '#9a968c',
+        brass: '#e4c48a',
+      },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      boxShadow: {
+        panel: '0 18px 50px rgba(0, 0, 0, 0.35)',
       },
     },
   },

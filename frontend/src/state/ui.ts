@@ -12,7 +12,7 @@ import type {
   SpatialModel,
 } from '../lib/types'
 
-export type ViewPreset = 'iso' | 'top' | 'free'
+export type ViewPreset = 'iso' | 'top' | 'free' | 'video'
 
 interface SceneStore {
   model: SpatialModel | null

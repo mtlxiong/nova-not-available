@@ -264,12 +264,12 @@ export function VideoPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-1.5 text-xs">
-        <span className="font-semibold uppercase tracking-wide text-zinc-400">Video</span>
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <span className="kicker">Video</span>
         <span className="flex gap-1.5">
-          {simulated && <span className="rounded bg-sky-900 px-1.5 text-sky-200">SIMULATED</span>}
-          {calEditing && <span className="rounded bg-yellow-500 px-1.5 text-black">click floor points</span>}
-          {drawingZone && <span className="rounded bg-yellow-500 px-1.5 text-black">click zone corners on the floor</span>}
+          {simulated && <span className="chip text-sky-200">Simulated</span>}
+          {calEditing && <span className="chip text-amber-200">Click floor points</span>}
+          {drawingZone && <span className="chip text-amber-200">Click zone corners</span>}
         </span>
       </div>
       <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -281,7 +281,7 @@ export function VideoPanel() {
           onClick={onClick}
         />
         {!hasFrame && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-zinc-500">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8 text-center text-sm leading-relaxed text-mute">
             {mode === 'replay'
               ? 'Replay reconstructs movement from stored observations; video frames are not stored.'
               : 'No video. Choose a source and press Start.'}

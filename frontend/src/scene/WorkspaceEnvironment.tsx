@@ -1,34 +1,105 @@
-import { Suspense, useMemo } from 'react'
-import { Html, useTexture } from '@react-three/drei'
+import { useEffect, useMemo } from 'react'
+import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { withBackend } from '../lib/backend'
-import { fixtureName, modelBounds, PROVENANCE_COLORS } from '../lib/model'
-import type { Fixture, FloorTexture, SpatialModel } from '../lib/types'
-import { AssetBoundary } from './ImageBlasterWorld'
+import { fixtureName, modelBounds } from '../lib/model'
+import type { Fixture, SpatialModel } from '../lib/types'
 
-/** Top-down image of the real floor, warped from the camera's people-free background plate. */
-function FloorImage({ tex }: { tex: FloorTexture }) {
-  const map = useTexture(withBackend(tex.url))
-  map.colorSpace = THREE.SRGBColorSpace
-  map.anisotropy = 8
-  const [w, d] = tex.size_m
-  return (
-    <mesh position={[tex.origin[0] + w / 2, 0.002, -(tex.origin[1] + d / 2)]} rotation-x={-Math.PI / 2} receiveShadow>
-      <planeGeometry args={[w, d]} />
-      <meshStandardMaterial map={map} transparent alphaTest={0.05} roughness={1} />
-    </mesh>
-  )
+type Surface = 'floor' | 'wood' | 'fabric' | 'metal'
+
+const textures = new Map<Surface, THREE.Texture>()
+
+function paintSurface(kind: Surface, ctx: CanvasRenderingContext2D) {
+  const n = 256
+  if (kind === 'floor') {
+    ctx.fillStyle = '#c4a484'
+    ctx.fillRect(0, 0, n, n)
+    for (let y = 0; y < n; y += 32) {
+      ctx.fillStyle = y % 64 === 0 ? '#a8845c' : '#d2b48c'
+      ctx.fillRect(0, y, n, 30)
+      ctx.fillStyle = 'rgba(80, 48, 20, 0.35)'
+      ctx.fillRect(0, y + 30, n, 2)
+    }
+    ctx.strokeStyle = 'rgba(90, 55, 25, 0.25)'
+    for (let i = 0; i < 40; i++) {
+      ctx.beginPath()
+      ctx.moveTo(0, 8 + i * 6)
+      ctx.bezierCurveTo(80, 6 + i * 6, 160, 12 + i * 6, n, 8 + i * 6)
+      ctx.stroke()
+    }
+    return
+  }
+  if (kind === 'wood') {
+    ctx.fillStyle = '#8d6e53'
+    ctx.fillRect(0, 0, n, n)
+    ctx.strokeStyle = 'rgba(60, 36, 18, 0.35)'
+    for (let y = 4; y < n; y += 7) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.bezierCurveTo(70, y - 2, 150, y + 3, n, y)
+      ctx.stroke()
+    }
+    return
+  }
+  if (kind === 'fabric') {
+    ctx.fillStyle = '#6e7c86'
+    ctx.fillRect(0, 0, n, n)
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'
+    for (let y = 0; y < n; y += 4) ctx.fillRect(0, y, n, 1)
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'
+    for (let x = 0; x < n; x += 4) ctx.fillRect(x, 0, 1, n)
+    return
+  }
+  const g = ctx.createLinearGradient(0, 0, n, n)
+  g.addColorStop(0, '#9ca3af')
+  g.addColorStop(0.45, '#e5e7eb')
+  g.addColorStop(1, '#6b7280')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, n, n)
+}
+
+function surfaceTexture(kind: Surface) {
+  const cached = textures.get(kind)
+  if (cached) return cached
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  paintSurface(kind, ctx)
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.anisotropy = 8
+  textures.set(kind, tex)
+  return tex
+}
+
+/** A stock material for the kind of thing the detector named, not a crop of the camera frame. */
+export function surfaceForKind(kind: string): Surface {
+  const k = kind.toLowerCase()
+  if (/sofa|couch|cushion|bed|pillow|mattress/.test(k)) return 'fabric'
+  if (/bin|box|fridge|appliance|machine|metal|cart|rack/.test(k)) return 'metal'
+  return 'wood'
+}
+
+function tiled(kind: Surface, repeatX: number, repeatY: number) {
+  const base = surfaceTexture(kind)
+  if (!base) return null
+  const map = base.clone()
+  map.wrapS = map.wrapT = THREE.RepeatWrapping
+  map.repeat.set(Math.max(repeatX, 0.5), Math.max(repeatY, 0.5))
+  return map
 }
 
 function FixtureBox({ f, showLabel }: { f: Fixture; showLabel: boolean }) {
   const [w, d, h] = f.size
-  const color = PROVENANCE_COLORS[f.provenance] ?? '#a1a1aa'
-  const guessed = f.estimated_dims.length > 0
+  const surface = surfaceForKind(f.kind)
+  const map = useMemo(() => tiled(surface, w / 0.45, h / 0.45), [surface, w, h])
+  useEffect(() => () => map?.dispose(), [map])
   return (
     <group position={[f.center[0], 0, -f.center[1]]} rotation-y={(f.yaw_deg * Math.PI) / 180}>
       <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={f.provenance === 'template' ? '#a1a1aa' : color} roughness={0.6} transparent={guessed} opacity={guessed ? 0.72 : 1} />
+        <meshStandardMaterial map={map ?? undefined} color={map ? '#ffffff' : '#a1a1aa'} roughness={surface === 'metal' ? 0.35 : 0.8} metalness={surface === 'metal' ? 0.45 : 0} />
       </mesh>
       {showLabel && f.provenance !== 'template' && (
         <Html position={[0, h + 0.15, 0]} center distanceFactor={10} zIndexRange={[10, 0]}>
@@ -47,8 +118,10 @@ export function WorkspaceEnvironment({ model, showLabels = true }: { model: Spat
   const w = b.x1 - b.x0
   const d = b.y1 - b.y0
   const floorShape = useMemo(() => new THREE.Shape(model.floor_polygon.map(([x, y]) => new THREE.Vector2(x, y))), [model])
+  const floorMap = useMemo(() => (model.source === 'blank' ? null : tiled('floor', w / 1.5, d / 1.5)), [model.source, w, d])
+  useEffect(() => () => floorMap?.dispose(), [floorMap])
   const walls = useMemo(() => {
-    if (model.source === 'analyzed' || model.source === 'blank') return []
+    if (model.source === 'blank') return []
     const out: { pos: [number, number, number]; len: number; rot: number }[] = []
     const pts = model.floor_polygon
     for (let i = 0; i < pts.length; i++) {
@@ -64,22 +137,15 @@ export function WorkspaceEnvironment({ model, showLabels = true }: { model: Spat
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <shapeGeometry args={[floorShape]} />
-        <meshStandardMaterial color={model.source === 'blank' ? '#27272a' : '#3f3f46'} roughness={0.9} />
+        <meshStandardMaterial map={floorMap ?? undefined} color={floorMap ? '#ffffff' : '#27272a'} roughness={0.9} />
       </mesh>
-      {model.floor_texture && (
-        <AssetBoundary key={model.floor_texture.url} label="floor texture">
-          <Suspense fallback={null}>
-            <FloorImage tex={model.floor_texture} />
-          </Suspense>
-        </AssetBoundary>
-      )}
-      <gridHelper args={[span, Math.round(span * 2), '#52525b', '#3f3f46']} position={[(b.x0 + b.x1) / 2, model.floor_texture ? 0.004 : 0.002, -(b.y0 + b.y1) / 2]}>
-        <meshBasicMaterial attach="material" transparent opacity={model.floor_texture ? 0.25 : 1} />
+      <gridHelper args={[span, Math.round(span * 2), '#52525b', '#3f3f46']} position={[(b.x0 + b.x1) / 2, 0.004, -(b.y0 + b.y1) / 2]}>
+        <meshBasicMaterial attach="material" transparent opacity={0.35} />
       </gridHelper>
       {walls.map((wl, i) => (
         <mesh key={i} position={wl.pos} rotation-y={wl.rot}>
           <boxGeometry args={[wl.len, 0.3, 0.06]} />
-          <meshStandardMaterial color="#27272a" />
+          <meshStandardMaterial color="#3f3f46" />
         </mesh>
       ))}
       {model.fixtures.map((f) => (

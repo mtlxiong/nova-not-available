@@ -215,14 +215,32 @@ class SessionManager:
             runner = self.runner
             if runner is None:
                 return self._status("idle")
+            if runner.wait(0):
+                return self._closed_status(runner)
             self._status("stopping")
         runner.stop()
-        runner.wait(10)
-        return self.last_status
+        finished = runner.wait(10)
+        with self._lock:
+            if self.runner is not runner:
+                return self.last_status
+            if finished and self.last_status.state != "stopping":
+                return self.last_status
+            if not finished:
+                log.warning("session %s did not stop within timeout; releasing it", runner.session_id)
+                status = self._status("stopped", "stop timed out; session released")
+                self.runner = None
+                return status
+            return self._closed_status(runner)
+
+    def _closed_status(self, runner: SessionRunner) -> SessionStatusMessage:
+        state = "error" if runner.result.error else "stopped"
+        return self._status(state, runner.result.error)
 
     def _on_finished(self, runner: SessionRunner) -> None:
-        state = "error" if runner.result.error else "stopped"
-        self._status(state, runner.result.error)
+        with self._lock:
+            if self.runner is not runner:
+                return
+            self._closed_status(runner)
 
     def set_calibration(self, calibration_id: str | None) -> SessionStatusMessage:
         with self._lock:

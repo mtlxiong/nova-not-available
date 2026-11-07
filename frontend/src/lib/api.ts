@@ -111,6 +111,7 @@ export const api = {
   replay: (id: string) => request<ReplayData>(`/api/sessions/${id}/replay`),
   metrics: (id: string) => request<SessionMetrics>(`/api/sessions/${id}/metrics`),
   calibrations: () => request<CalibrationListItem[]>('/api/calibrations'),
+  calibration: (id: string) => request<{ calibration: CalibrationResult; overlay: CalibrationOverlay }>(`/api/calibrations/${encodeURIComponent(id)}`),
   previewCalibration: (body: CalibrationBody) =>
     request<{ calibration: CalibrationResult; overlay: CalibrationOverlay }>('/api/calibrations/preview', json('POST', body)),
   saveCalibration: (body: CalibrationBody) =>

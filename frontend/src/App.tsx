@@ -66,17 +66,21 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <TopBar connected={connected} />
-      {loadError && <div className="bg-red-900 px-3 py-1 text-xs">Backend not reachable: {loadError}</div>}
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,30%)_1fr_minmax(300px,24%)]">
-        <div className="min-h-0 border-r border-zinc-800">
+      {loadError && (
+        <div className="mx-3 mt-2 rounded-xl bg-rose-950/80 px-3 py-1.5 text-xs text-rose-100 ring-1 ring-rose-400/30">
+          Backend not reachable: {loadError}
+        </div>
+      )}
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(300px,28%)_minmax(0,1fr)_minmax(320px,26%)] gap-2 px-2 pb-2 pt-2">
+        <section className="panel min-h-0">
           <VideoPanel />
-        </div>
-        <div className="min-h-0">
+        </section>
+        <section className="panel min-h-0">
           <TwinViewer />
-        </div>
-        <div className="min-h-0 border-l border-zinc-800">
+        </section>
+        <section className="panel min-h-0">
           <RightPanel />
-        </div>
+        </section>
       </div>
       <Timeline />
     </div>
