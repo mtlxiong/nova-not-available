@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1440px; height: 900px; overflow: hidden; background: #071433; color: #f4f7fb; font-family: "Source Sans 3", sans-serif; }
+  .app { display: flex; height: 900px; }
+  .rail { width: 220px; border-right: 1px solid rgba(244,247,251,0.18); padding: 22px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .rail .brand { font-family: Figtree, sans-serif; font-weight: 700; letter-spacing: 0.04em; font-size: 26px; margin-bottom: 18px; }
+  .rail a { display: flex; align-items: center; height: 52px; padding: 0 12px; color: #f4f7fb; text-decoration: none; font-family: Figtree, sans-serif; letter-spacing: 0.04em; font-size: 18px; }
+  .rail a.on { color: #fff; font-size: 28px; font-weight: 700; background: #e10600; }
+  .rail .foot { margin-top: auto; font-size: 13px; color: #9eb0c8; }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .top { min-height: 64px; display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-bottom: 1px solid rgba(244,247,251,0.18); font-size: 14px; }
+  .top .sp { margin-left: auto; }
+  .stop { background: #e10600; color: #fff; border: 0; height: 32px; padding: 0 14px; font-weight: 600; }
+  .stage { flex: 1; display: flex; min-height: 0; }
+  .net { flex: 1; position: relative; margin: 16px; background:
+      radial-gradient(circle at 50% 50%, rgba(244,247,251,0.04), transparent 60%),
+      #071433; border: 1px solid rgba(244,247,251,0.18); }
+  .line { position: absolute; height: 6px; border-radius: 3px; }
+  .l1 { left: 8%; top: 62%; width: 70%; background: #e10600; height: 10px; }
+  .l2 { left: 20%; top: 28%; width: 55%; background: #2f6fed; transform: rotate(28deg); }
+  .l3 { left: 30%; top: 48%; width: 40%; background: #1f9d55; transform: rotate(-18deg); }
+  .l4 { left: 48%; top: 22%; width: 36%; background: #f0b429; transform: rotate(48deg); }
+  .node { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #f4f7fb; left: 58%; top: 58%; box-shadow: 0 0 0 4px #e10600; }
+  .node span { position: absolute; left: 24px; top: -6px; font-family: Figtree, sans-serif; font-size: 22px; white-space: nowrap; }
+  .legend { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 14px; font-size: 13px; background: rgba(7,20,51,0.92); padding: 12px 14px; }
+  .sw { width: 18px; height: 4px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+  .panel { width: 300px; border-left: 1px solid rgba(244,247,251,0.18); padding: 16px; }
+  .panel h2 { font-family: Figtree, sans-serif; font-size: 22px; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(244,247,251,0.15); font-size: 14px; }
+  .amber { color: #f0b429; letter-spacing: 0.04em; font-family: Figtree, sans-serif; margin-top: 16px; font-size: 16px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <nav class="rail">
+      <div class="brand">ECHO</div>
+      <a>MAP</a>
+      <a class="on">LIVE</a>
+      <a>REPLAY</a>
+      <div class="foot">connected<br />vtest.avi · simulated</div>
+    </nav>
+    <div class="main">
+      <div class="top"><span>Counter zone · p-014 selected</span><span class="sp">t 0:12.4</span><button class="stop">Stop</button></div>
+      <div class="stage">
+        <div class="net">
+          <div class="line l2"></div>
+          <div class="line l3"></div>
+          <div class="line l4"></div>
+          <div class="line l1"></div>
+          <div class="node"><span>p-014 · doubled</span></div>
+          <div class="legend">
+            <span><i class="sw" style="background:#e10600"></i>p-014</span>
+            <span><i class="sw" style="background:#2f6fed"></i>p-003</span>
+            <span><i class="sw" style="background:#1f9d55"></i>Counter</span>
+            <span><i class="sw" style="background:#f0b429"></i>Door</span>
+          </div>
+        </div>
+        <aside class="panel">
+          <h2>Session</h2>
+          <div class="row"><span>Source</span><span>Video file</span></div>
+          <div class="row"><span>Detector</span><span>YOLO + ByteTrack</span></div>
+          <div class="row"><span>Calibration</span><span>none</span></div>
+          <div class="row"><span>ArUco</span><span>on</span></div>
+          <div class="row"><span>Rate</span><span>10 fps</span></div>
+          <div class="amber">UNCALIBRATED</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1440px; height: 900px; overflow: hidden; background: #f4f5f7; color: #1c1f26; font-family: "Source Sans 3", sans-serif; font-size: 13px; }
+  header { height: 56px; background: #fff; border-bottom: 1px solid #e2e4e8; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+  header strong { font-size: 16px; }
+  header select, header input { height: 30px; border: 1px solid #d0d4dc; border-radius: 6px; background: #fff; padding: 0 8px; }
+  .primary { margin-left: auto; background: #3b6fe0; color: #fff; border: 0; height: 32px; padding: 0 14px; border-radius: 6px; font-weight: 600; }
+  .pill { background: #e8eefc; color: #2a4eaa; border-radius: 99px; padding: 2px 8px; font-size: 12px; }
+  .warn { background: #fbf3e2; color: #8a5a00; border-radius: 99px; padding: 2px 8px; font-size: 12px; }
+  .body { display: flex; height: 760px; }
+  .col { width: 340px; background: #fff; border-right: 1px solid #e2e4e8; display: flex; flex-direction: column; }
+  .col.right { border-right: 0; border-left: 1px solid #e2e4e8; }
+  .hd { padding: 10px 12px; font-weight: 600; border-bottom: 1px solid #e2e4e8; }
+  .view { flex: 1; margin: 10px; background: #121418; position: relative; border-radius: 8px; }
+  .bbox { position: absolute; left: 40%; top: 24%; width: 48px; height: 110px; border: 2px solid #3b6fe0; }
+  .mid { flex: 1; position: relative; background:
+      linear-gradient(#1a1d24, #121418); }
+  .grid { position: absolute; inset: 24px; border: 1px solid #2c313c; background:
+      repeating-linear-gradient(#2c313c 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(90deg, #2c313c 0 1px, transparent 1px 40px); }
+  .blob { position: absolute; left: 38%; top: 42%; width: 14px; height: 14px; border-radius: 50%; background: #3b6fe0; }
+  .tabs { display: flex; border-bottom: 1px solid #e2e4e8; }
+  .tabs span { flex: 1; text-align: center; padding: 8px 0; color: #6b7280; }
+  .tabs .on { color: #3b6fe0; box-shadow: inset 0 -2px 0 #3b6fe0; font-weight: 600; }
+  .list { padding: 8px 12px; }
+  .list div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eef0f3; }
+  footer { height: 84px; background: #fff; border-top: 1px solid #e2e4e8; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+  footer button, footer select { height: 30px; border: 1px solid #d0d4dc; background: #fff; border-radius: 6px; padding: 0 8px; }
+  .scrub { flex: 1; }
+</style>
+</head>
+<body>
+  <header>
+    <strong>ECHO</strong>
+    <span class="pill">Live</span>
+    <span class="warn">Uncalibrated</span>
+    <select><option>Video file</option></select>
+    <select><option>vtest.avi</option></select>
+    <select><option>YOLO + ByteTrack</option></select>
+    <select><option>Kitchen template</option></select>
+    <button class="primary">Stop</button>
+  </header>
+  <div class="body">
+    <section class="col">
+      <div class="hd">Video</div>
+      <div class="view"><div class="bbox"></div></div>
+    </section>
+    <section class="mid"><div class="grid"></div><div class="blob"></div></section>
+    <aside class="col right">
+      <div class="tabs"><span class="on">Workspace</span><span>Entities</span><span>Events</span><span>Metrics</span><span>Scene</span></div>
+      <div class="list">
+        <div><span>Source</span><span>Running session</span></div>
+        <div><span>Calibration</span><span>Auto, approximate</span></div>
+        <div><span>Objects</span><span>12 fixtures</span></div>
+        <div><span>Zones</span><span>8 proposed</span></div>
+        <div><span>p-014</span><span>Counter · active</span></div>
+      </div>
+    </aside>
+  </div>
+  <footer>
+    <button>Live</button>
+    <select><option>Replay session…</option></select>
+    <span>live · t = 0:12.4</span>
+    <input class="scrub" type="range" />
+  </footer>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1440px; height: 900px; overflow: hidden; background: #f5f6f4; color: #161616; font-family: "Source Sans 3", sans-serif; }
+  .bar { height: 72px; background: #161616; color: #f5f6f4; display: flex; align-items: center; gap: 28px; padding: 0 22px; }
+  .name { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.08em; }
+  .jobs { display: flex; align-items: baseline; gap: 22px; }
+  .jobs span { font-family: "Barlow Condensed", sans-serif; font-weight: 500; font-size: 18px; letter-spacing: 0.04em; color: #d4d4d4; }
+  .jobs .on { font-size: 40px; color: #e23b2f; letter-spacing: 0.04em; }
+  .grow { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #1f9d55; }
+  button, select, input { font: inherit; }
+  .stop { background: #e23b2f; color: #fff; border: 0; height: 32px; padding: 0 14px; font-weight: 600; }
+  .body { display: flex; height: 736px; }
+  .video, .side { width: 320px; border-right: 1px solid #161616; display: flex; flex-direction: column; }
+  .side { border-right: 0; border-left: 1px solid #161616; }
+  .hd { min-height: 40px; display: flex; align-items: center; padding: 10px 14px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #161616; }
+  .frame { flex: 1; margin: 12px; background: #1c1e1c; position: relative; padding: 16px; }
+  .box { position: absolute; left: 38%; top: 22%; width: 54px; height: 120px; border: 2px solid #2f6fed; }
+  .box i { position: absolute; left: -2px; top: -16px; background: #2f6fed; color: #fff; font-size: 11px; font-style: normal; padding: 1px 4px; }
+  .feet { position: absolute; left: 61px; bottom: -3px; width: 8px; height: 8px; border-radius: 50%; background: #e2b007; box-shadow: 0 0 0 2px #e2b007; }
+  .stage { flex: 1; padding: 16px 18px 10px; display: flex; flex-direction: column; }
+  .floor { flex: 1; background:
+      repeating-linear-gradient(#2a2c2a 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(90deg, #2a2c2a 0 1px, transparent 1px 48px),
+      #141614; position: relative; }
+  .zone { position: absolute; left: 18%; top: 30%; width: 34%; height: 28%; background: rgba(31,157,85,0.28); border: 1px dashed #1f9d55; }
+  .track { position: absolute; left: 46%; top: 48%; width: 18px; height: 18px; border-radius: 50%; background: #2f6fed; box-shadow: 0 0 0 3px #2f6fed; }
+  .cap { min-height: 40px; display: flex; align-items: center; gap: 14px; padding: 8px 2px 0; font-family: "Barlow Condensed", sans-serif; font-size: 22px; letter-spacing: 0.02em; }
+  .cap b { color: #b42318; font-weight: 700; }
+  .tabs { display: flex; border-bottom: 1px solid #161616; }
+  .tabs span { flex: 1; text-align: center; font-size: 13px; padding: 8px 0; color: #666; }
+  .tabs .on { color: #161616; box-shadow: inset 0 -2px 0 #e23b2f; font-weight: 600; }
+  .form { padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .form label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .form select, .form input { height: 28px; border: 1px solid #161616; background: #fff; padding: 0 6px; width: 150px; }
+  .mark { margin: 8px 12px; border: 1px solid #b42318; color: #b42318; font-family: "Barlow Condensed", sans-serif; letter-spacing: 0.04em; font-size: 18px; text-align: center; padding: 10px 12px; }
+  .strip { height: 92px; border-top: 1px solid #161616; display: flex; align-items: center; gap: 16px; padding: 0 18px; }
+  .ticks { flex: 1; height: 36px; background: repeating-linear-gradient(90deg, #161616 0 1px, transparent 1px 18px); position: relative; }
+  .play { position: absolute; left: 22%; top: -6px; bottom: -6px; width: 2px; background: #e23b2f; }
+  .clock { font-family: "Barlow Condensed", sans-serif; font-size: 22px; letter-spacing: 0.04em; width: 220px; }
+</style>
+</head>
+<body>
+  <header class="bar">
+    <div class="name">ECHO</div>
+    <div class="jobs"><span>MAP</span><span class="on">LIVE</span><span>REPLAY</span></div>
+    <div class="grow"><span class="dot"></span><span>connected</span><button class="stop">Stop</button></div>
+  </header>
+  <div class="body">
+    <section class="video">
+      <div class="hd">Video · vtest.avi · simulated</div>
+      <div class="frame"><div class="box"><i>p-014</i><div class="feet"></div></div></div>
+    </section>
+    <section class="stage">
+      <div class="floor"><div class="zone"></div><div class="track"></div></div>
+      <div class="cap">12 · <b>LIVE</b> · 0:12.4 · uncalibrated · 1 m</div>
+    </section>
+    <aside class="side">
+      <div class="tabs"><span>Workspace</span><span class="on">Session</span><span>Review</span><span>Scene</span></div>
+      <div class="form">
+        <label>Source <select><option>Video file</option></select></label>
+        <label>File <select><option>vtest.avi 768×576</option></select></label>
+        <label>Detector <select><option>YOLO + ByteTrack</option></select></label>
+        <label>Calibration <select><option>none, calibrate live</option></select></label>
+        <label>ArUco <input type="checkbox" checked /></label>
+        <label>fps <input value="10" /></label>
+      </div>
+      <div class="mark">UNCALIBRATED</div>
+    </aside>
+  </div>
+  <footer class="strip">
+    <div class="clock">0:12.4 live</div>
+    <div class="ticks"><div class="play"></div></div>
+  </footer>
+</body>
+</html>
