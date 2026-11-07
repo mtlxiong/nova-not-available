@@ -104,7 +104,7 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
 
   const result = job?.state === 'done' ? job.result : null
   return (
-    <div className="space-y-2 rounded-xl bg-white/[0.03] p-2.5 ring-1 ring-white/[0.06]">
+    <div className="space-y-2 border-t border-white/10 pt-3">
       <div className="text-[12px] font-medium text-paper">Analyze a workspace</div>
       <p className="text-[11px] text-zinc-500">
         Removes people to get a clean background, estimates the floor plane, labels objects with an open-vocabulary detector, and proposes activity zones from where people actually are. Nothing is assumed about the type of space.

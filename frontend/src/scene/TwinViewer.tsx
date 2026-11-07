@@ -144,10 +144,10 @@ export function TwinViewer() {
         </group>
         <CameraRig model={model} pose={pose} />
       </Canvas>
-      <div className="pointer-events-none absolute left-3 top-3 max-w-[70%] rounded-md bg-[#1a1c1a] px-3 py-2.5 text-[12px] text-paper ring-1 ring-white/10">
+      <div className="pointer-events-none absolute left-3 top-3 max-w-xs rounded-md bg-[#1a1c1a] px-3 py-2.5 text-[12px] text-paper ring-1 ring-white/10">
         {!blaster ? (
           <div>
-            <div className="font-medium">{model.name}</div>
+            <div className="truncate font-medium" title={model.name}>{model.name}</div>
             {model.source === 'template' && <div className="mt-0.5 text-amber-200/90">Template layout, not from this camera</div>}
             {model.source === 'blank' && <div className="mt-0.5 text-mute">Not mapped yet. Workspace tab, then Analyze.</div>}
             {model.source === 'analyzed' && <div className="mt-0.5 text-mute">Reconstructed from camera footage</div>}

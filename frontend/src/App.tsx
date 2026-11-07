@@ -67,7 +67,7 @@ export default function App() {
     <div className="flex h-screen flex-col overflow-hidden">
       <TopBar connected={connected} />
       {loadError && (
-        <div className="mx-3 mt-2 rounded-xl bg-rose-950/80 px-3 py-1.5 text-xs text-rose-100 ring-1 ring-rose-400/30">
+        <div className="border-b border-rose-400/30 bg-rose-950/50 px-4 py-1.5 text-xs text-rose-100">
           Backend not reachable: {loadError}
         </div>
       )}

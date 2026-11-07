@@ -93,7 +93,7 @@ function SelectedDetail() {
 
   if (!selectedId) return null
   return (
-    <div className="mt-3 rounded-xl bg-white/[0.03] p-2.5 ring-1 ring-white/[0.06]">
+    <div className="mt-3 border-t border-white/10 pt-3">
       <div className="flex items-center justify-between">
         <span className="font-mono font-semibold">{e?.label ?? selectedId}</span>
         <span className="text-zinc-400">{e ? `${e.class_name} · ${e.source}` : 'not present at this time'}</span>
@@ -221,7 +221,7 @@ function MetricsTab() {
       {error && <div className="text-red-400">{error}</div>}
       {metrics && (
         <>
-          <div className="rounded-xl bg-white/[0.03] p-2 text-mute ring-1 ring-white/[0.06]">
+          <div className="border-t border-white/10 pt-2 text-mute">
             {metrics.simulated && <span className="mr-1 rounded bg-sky-900 px-1 text-sky-200">SIMULATED DATA</span>}
             {metrics.data_quality.positioned_observations}/{metrics.data_quality.observations} observations positioned · calibration RMSE{' '}
             {metrics.data_quality.calibration_rmse_m?.toFixed(3) ?? 'n/a'} m · {(metrics.duration_ms / 1000).toFixed(1)} s

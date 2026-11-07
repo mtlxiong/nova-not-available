@@ -25,8 +25,8 @@ function Perf() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex min-w-0 flex-col gap-1">
-      <span className="kicker">{label}</span>
+    <label className="flex min-w-0 items-center gap-1.5 text-xs text-mute">
+      <span className="shrink-0">{label}</span>
       {children}
     </label>
   )
@@ -119,40 +119,18 @@ export function TopBar({ connected }: { connected: boolean }) {
     }
   }
 
-  const stateDot = status.state === 'running' ? 'bg-emerald-400' : status.state === 'error' ? 'bg-rose-400' : 'bg-white/30'
+  const stateClass = status.state === 'running' ? 'text-emerald-300' : status.state === 'error' ? 'text-rose-300' : 'text-mute'
 
   return (
-    <header className="shrink-0 border-b border-white/10 px-3 py-2.5">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-semibold">ECHO</span>
-          <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-rose-400'}`} title={connected ? 'connected' : 'backend disconnected'} />
-        </div>
-        <span className="chip">
-          <span className={`h-1.5 w-1.5 rounded-full ${stateDot}`} />
-          {status.state}
-        </span>
-        {status.simulated && <span className="chip text-sky-200">Simulated</span>}
-        {status.state === 'running' && !status.calibrated && <span className="chip text-amber-200">Uncalibrated</span>}
-        <div className="ml-auto flex items-end gap-2">
-          <Field label="Scene">
-            <select className="input max-w-52" value={sceneId} onChange={(e) => useScene.getState().set({ sceneId: e.target.value })}>
-              {scenes.map((s) => (
-                <option key={s.scene_id} value={s.scene_id}>
-                  {s.display_name}
-                  {s.kind === 'image-blaster' && s.synthetic ? ' (synthetic)' : ''}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <button className="btn mb-px" title="Optional. Upload a reference image and run World Labs Marble once. Needs WORLD_LABS_API_KEY." onClick={() => refImageRef.current?.click()}>
-            World Labs
-          </button>
-          <input ref={refImageRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && generate(e.target.files[0])} />
-        </div>
+    <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-white/10 px-4 py-2">
+      <div className="flex items-center gap-2 pr-1">
+        <span className="text-sm font-semibold tracking-normal">ECHO</span>
+        <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-rose-400'}`} title={connected ? 'connected' : 'backend disconnected'} />
+        <span className={`text-xs ${stateClass}`}>{status.state}</span>
+        {status.simulated && <span className="text-xs text-sky-200">Simulated</span>}
+        {status.state === 'running' && !status.calibrated && <span className="text-xs text-amber-200">Uncalibrated</span>}
       </div>
-
-      <div className="mt-2.5 flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Field label="Source">
           <select className="input" value={running && status.source_kind ? status.source_kind : source} disabled={running} onChange={(e) => setSource(e.target.value as SourceKind)}>
             <option value="simulation">Simulation</option>
@@ -177,8 +155,7 @@ export function TopBar({ connected }: { connected: boolean }) {
                 ))}
               </select>
             </Field>
-<div className="flex flex-col gap-1">
-              <span className="kicker">Library</span>
+            <Field label="Library">
               <AddVideosButton
                 disabled={running}
                 onAdded={(added) => {
@@ -187,7 +164,7 @@ export function TopBar({ connected }: { connected: boolean }) {
                 }}
                 onError={setError}
               />
-            </div>
+            </Field>
           </>
         )}
         {source !== 'simulation' && (
@@ -210,7 +187,7 @@ export function TopBar({ connected }: { connected: boolean }) {
             </Field>
           </>
         )}
-        <label className="mb-1 flex h-7 items-center gap-1.5 text-[11px] text-mute">
+        <label className="flex h-8 items-center gap-1.5 text-xs text-mute">
           <input type="checkbox" checked={aruco} disabled={running} onChange={(e) => setAruco(e.target.checked)} />
           ArUco
         </label>
@@ -218,20 +195,34 @@ export function TopBar({ connected }: { connected: boolean }) {
           <input className="input w-16" type="number" min={1} max={30} value={fps} disabled={running} onChange={(e) => setFps(Math.max(1, parseFloat(e.target.value) || 10))} />
         </Field>
         {!running ? (
-          <button className="btn btn-primary mb-px px-3" disabled={busy || (source === 'file' && !videoId)} onClick={start}>
+          <button className="btn btn-primary px-3" disabled={busy || (source === 'file' && !videoId)} onClick={start}>
             Start
           </button>
         ) : (
-          <button className="btn btn-danger mb-px px-3" disabled={busy} onClick={stop}>
+          <button className="btn btn-danger px-3" disabled={busy} onClick={stop}>
             Stop
           </button>
         )}
-        <div className="mb-1 ml-auto">
-          <Perf />
-        </div>
+        <Perf />
+      </div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Field label="Scene">
+          <select className="input w-56" value={sceneId} onChange={(e) => useScene.getState().set({ sceneId: e.target.value })}>
+            {scenes.map((s) => (
+              <option key={s.scene_id} value={s.scene_id}>
+                {s.display_name}
+                {s.kind === 'image-blaster' && s.synthetic ? ' (synthetic)' : ''}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <button className="btn" title="Optional. Upload a reference image and run World Labs Marble once. Needs WORLD_LABS_API_KEY." onClick={() => refImageRef.current?.click()}>
+          World Labs
+        </button>
+        <input ref={refImageRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && generate(e.target.files[0])} />
       </div>
       {(error || status.message || genStatus) && (
-        <div className="mt-2 text-[11px]">
+        <div className="basis-full text-xs">
           {error && <span className="mr-3 text-rose-300">{error}</span>}
           {status.state === 'error' && status.message && <span className="mr-3 text-rose-300">{status.message}</span>}
           {genStatus && <span className="text-mute">{genStatus}</span>}

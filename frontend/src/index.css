@@ -24,7 +24,8 @@
     @apply border-rose-400/40 bg-transparent text-rose-200 hover:bg-rose-500/15;
   }
   .input {
-    @apply h-8 rounded-md border border-white/10 bg-transparent px-2 text-xs outline-none transition focus:border-white/30 disabled:opacity-50;
+    @apply h-8 rounded-md border border-white/10 px-2 text-xs outline-none transition focus:border-white/30 disabled:opacity-50;
+    background: rgba(255, 255, 255, 0.04);
     color: #eceae4;
   }
   .input::placeholder {

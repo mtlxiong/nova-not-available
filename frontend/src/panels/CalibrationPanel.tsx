@@ -86,7 +86,7 @@ export function CalibrationPanel() {
             ))}
           </>
         ) : (
-          <span className="text-amber-400">Uncalibrated: positions are null and nothing is placed in 3D.</span>
+          <span className="text-amber-200/90">Uncalibrated. Nothing is placed in 3D until you calibrate.</span>
         )}
       </div>
 
