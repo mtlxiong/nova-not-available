@@ -1,3 +1,4 @@
+import { wsUrl } from './backend'
 import type { ServerMessage } from './types'
 
 export interface VideoFrame {
@@ -45,8 +46,7 @@ export function connect(onMessage: (msg: ServerMessage) => void, onState: (conne
   let decoding = false
 
   const open = () => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    ws = new WebSocket(`${proto}://${location.host}/ws`)
+    ws = new WebSocket(wsUrl())
     ws.binaryType = 'arraybuffer'
     ws.onopen = () => {
       retry = 0

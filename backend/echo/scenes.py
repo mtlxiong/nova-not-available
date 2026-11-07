@@ -120,6 +120,25 @@ def list_scenes(settings: Settings) -> list[dict[str, Any]]:
 # ------------------------------------------------------------------------------- generation
 
 
+def _marble_progress(settings: Settings, slug: str) -> str | None:
+    """World Labs writes progress into a hidden request file while generation runs."""
+    world_dir = settings.worlds_dir / slug / "output" / "world"
+    if not world_dir.is_dir():
+        return None
+    files = sorted(world_dir.glob(".*.json"))
+    if not files:
+        return None
+    try:
+        data = json.loads(files[-1].read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    progress = ((data.get("result") or {}).get("metadata") or {}).get("progress") or {}
+    status, description = progress.get("status"), progress.get("description")
+    if status and description:
+        return f"{status}: {description}"
+    return description or status
+
+
 def _world_labs_key(settings: Settings) -> str | None:
     if os.environ.get("WORLD_LABS_API_KEY"):
         return os.environ["WORLD_LABS_API_KEY"]
@@ -207,4 +226,5 @@ class SceneGenerator:
                 job.status = "completed" if code == 0 and read_world_scene(self.settings, slug) else "failed"
                 if job.status == "failed":
                     job.reason = job.log_path.read_text()[-2000:] if job.log_path.exists() else f"exit code {code}"
-        return {"slug": slug, "status": job.status, "reason": job.reason, "started_wall_ms": job.started_wall_ms}
+        detail = _marble_progress(self.settings, slug) if job.status == "running" else None
+        return {"slug": slug, "status": job.status, "reason": job.reason, "detail": detail, "started_wall_ms": job.started_wall_ms}

@@ -12,6 +12,7 @@ import { EntitiesLayer } from './EntitiesLayer'
 import { HeatmapLayer } from './HeatmapLayer'
 import { ImageBlasterWorld } from './ImageBlasterWorld'
 import { FloorOutline, WorkspaceEnvironment } from './WorkspaceEnvironment'
+import { withBackend } from '../lib/backend'
 import { modelBounds } from '../lib/model'
 import { ZonesLayer } from './ZonesLayer'
 
@@ -68,6 +69,7 @@ export function TwinViewer() {
   const showSplat = useScene((s) => s.showSplat)
   const showCollider = useScene((s) => s.showCollider)
   const showLabels = useScene((s) => s.showLabels)
+  const worldBuild = useScene((s) => s.worldBuild)
   const metrics = useReplay((s) => s.metrics)
   const select = useTwin((s) => s.select)
   const [assetError, setAssetError] = useState<string | null>(null)
@@ -86,8 +88,8 @@ export function TwinViewer() {
         <directionalLight position={[6, 12, 4]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
         {blaster && (
           <ImageBlasterWorld
-            splatUrl={blaster.splat_url}
-            colliderUrl={blaster.collider_url}
+            splatUrl={withBackend(blaster.splat_url)}
+            colliderUrl={withBackend(blaster.collider_url)}
             semantics={blaster.semantics ?? { metric_scale_factor: 1, ground_plane_offset: 0, flip_y: true }}
             showSplat={showSplat}
             showCollider={showCollider}
@@ -110,6 +112,7 @@ export function TwinViewer() {
           {model.source === 'template' && <span className="text-amber-300"> · TEMPLATE layout (not from your camera)</span>}
           {model.source === 'blank' && <span className="text-zinc-400"> · not mapped yet — Workspace tab → Analyze</span>}
           {model.source === 'analyzed' && <span className="text-zinc-400"> · reconstructed from camera footage</span>}
+          {worldBuild && <div className="mt-1 text-amber-200">{worldBuild}</div>}
         </div>
       )}
       {blaster && (

@@ -1,13 +1,14 @@
 import { Suspense, useMemo } from 'react'
 import { Html, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
+import { withBackend } from '../lib/backend'
 import { fixtureName, modelBounds, PROVENANCE_COLORS } from '../lib/model'
 import type { Fixture, FloorTexture, SpatialModel } from '../lib/types'
 import { AssetBoundary } from './ImageBlasterWorld'
 
 /** Top-down image of the real floor, warped from the camera's people-free background plate. */
 function FloorImage({ tex }: { tex: FloorTexture }) {
-  const map = useTexture(tex.url)
+  const map = useTexture(withBackend(tex.url))
   map.colorSpace = THREE.SRGBColorSpace
   map.anisotropy = 8
   const [w, d] = tex.size_m

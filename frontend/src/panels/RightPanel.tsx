@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import { withBackend } from '../lib/backend'
 import type { Alignment, ReplayEvent } from '../lib/types'
 import { entityColor, visualState } from '../scene/EntitiesLayer'
 import { useTwin } from '../state/twin'
@@ -59,7 +60,7 @@ function SelectedDetail() {
     if (!selectedId || !sessionId || mode !== 'live') return
     let cancelled = false
     const load = () =>
-      fetch(`/api/sessions/${sessionId}/entities/${encodeURIComponent(selectedId)}/history`)
+      fetch(withBackend(`/api/sessions/${sessionId}/entities/${encodeURIComponent(selectedId)}/history`))
         .then((r) => r.json())
         .then((h) => !cancelled && setHistory(h))
         .catch(() => undefined)

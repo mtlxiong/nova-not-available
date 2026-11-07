@@ -1,3 +1,4 @@
+import { withBackend } from './backend'
 import type {
   AnalysisJob,
   CalibrationOverlay,
@@ -22,7 +23,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init)
+  const res = await fetch(withBackend(path), init)
   if (!res.ok) {
     let detail = res.statusText
     try {
@@ -93,7 +94,8 @@ export const api = {
     form.append('image', image)
     return request<{ slug: string; status: string; reason?: string | null }>('/api/scenes/generate', { method: 'POST', body: form })
   },
-  generationStatus: (slug: string) => request<{ slug: string; status: string; reason?: string | null }>(`/api/scenes/generate/${slug}`),
+  generationStatus: (slug: string) =>
+    request<{ slug: string; status: string; reason?: string | null; detail?: string | null }>(`/api/scenes/generate/${slug}`),
   videos: () => request<VideoInfo[]>('/api/videos'),
   uploadVideo: (file: File) => {
     const form = new FormData()

@@ -28,6 +28,8 @@ interface SceneStore {
   showHeatmap: boolean
   showCollider: boolean
   showSplat: boolean
+  /** Set while World Labs is still generating the 3D environment for this workspace. */
+  worldBuild: string | null
   view: ViewPreset
   viewNonce: number
   set: (patch: Partial<Omit<SceneStore, 'set' | 'setView'>>) => void
@@ -46,6 +48,7 @@ export const useScene = create<SceneStore>((set) => ({
   showHeatmap: false,
   showCollider: false,
   showSplat: true,
+  worldBuild: null,
   view: 'iso',
   viewNonce: 0,
   set: (patch) => set(patch),

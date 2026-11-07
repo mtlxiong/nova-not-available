@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api, type VideoInfo } from '../lib/api'
+import { withBackend } from '../lib/backend'
 import { fixtureName, localId, PROVENANCE_COLORS } from '../lib/model'
 import { ZONE_KINDS, type AnalysisJob, type SpatialModel, type SpatialModelListItem, type ZoneKind } from '../lib/types'
 import { reloadLiveModel } from '../lib/workspace'
+import { watchWorldGeneration } from '../lib/worldgen'
 import { useTwin } from '../state/twin'
 import { useCalibration, useScene, useWorkspace } from '../state/ui'
 import { refreshActiveCalibration } from './CalibrationPanel'
@@ -178,7 +180,7 @@ function AnalyzeForm({ onListChanged }: { onListChanged: () => void }) {
       {error && <div className="text-red-400">{error}</div>}
       {result && (
         <div className="space-y-1.5">
-          {result.model.background_url && <img src={result.model.background_url} className="w-full rounded" alt="People-free background plate" />}
+          {result.model.background_url && <img src={withBackend(result.model.background_url)} className="w-full rounded" alt="People-free background plate" />}
           <div className="grid grid-cols-2 gap-x-2 font-mono text-[11px] text-zinc-400">
             {Object.entries(result.stats).map(([k, v]) => (
               <span key={k}>
@@ -314,7 +316,7 @@ export function WorkspacePanel() {
   const showObjects = useScene((s) => s.showObjects)
   const [list, setList] = useState<SpatialModelListItem[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [genStatus, setGenStatus] = useState<string | null>(null)
+  const worldBuild = useScene((s) => s.worldBuild)
 
   const refreshList = () => {
     api.spatialModels().then(setList).catch(() => undefined)
@@ -356,12 +358,13 @@ export function WorkspacePanel() {
   }
 
   const generateWorld = async () => {
-    setGenStatus('staging background plate…')
+    useScene.getState().set({ worldBuild: 'Sending the background photo to World Labs…' })
     try {
       const res = await api.generateWorldFromWorkspace(model.model_id)
-      setGenStatus(res.status === 'unavailable' ? `Image-Blaster unavailable: ${res.reason}` : `Image-Blaster ${res.status} (${res.slug}); it appears in Scene when done`)
+      if (res.status === 'running') watchWorldGeneration(res.slug)
+      else useScene.getState().set({ worldBuild: res.reason ?? `Image-Blaster ${res.status}` })
     } catch (e) {
-      setGenStatus(errText(e))
+      useScene.getState().set({ worldBuild: errText(e) })
     }
   }
 
@@ -441,7 +444,7 @@ export function WorkspacePanel() {
           <button className="btn w-full" onClick={generateWorld} title="Runs Image-Blaster once on the people-free background plate (needs a World Labs key)">
             Generate 3D world from this view (Image-Blaster)
           </button>
-          {genStatus && <div className="text-[11px] text-zinc-400">{genStatus}</div>}
+          {worldBuild && <div className="text-[11px] text-amber-200">{worldBuild}</div>}
         </div>
       )}
 

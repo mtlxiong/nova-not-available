@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from './lib/api'
 import { connect } from './lib/ws'
 import { reloadLiveModel } from './lib/workspace'
+import { resumeWorldGeneration } from './lib/worldgen'
 import type { ServerMessage } from './lib/types'
 import { refreshActiveCalibration } from './panels/CalibrationPanel'
 import { RightPanel } from './panels/RightPanel'
@@ -45,7 +46,12 @@ export default function App() {
   const scenes = useScene((s) => s.scenes)
 
   useEffect(() => {
-    reloadLiveModel().catch((e) => setLoadError(String(e)))
+    reloadLiveModel()
+      .then(() => {
+        const id = useScene.getState().model?.model_id
+        if (id) resumeWorldGeneration(id)
+      })
+      .catch((e) => setLoadError(String(e)))
     loadScenes().catch(() => undefined)
     refreshActiveCalibration()
     const conn = connect(dispatch, setConnected)
